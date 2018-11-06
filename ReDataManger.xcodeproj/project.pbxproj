@@ -14,6 +14,10 @@
 		1886A9F72191E75300CC021B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1886A9F52191E75300CC021B /* LaunchScreen.storyboard */; };
 		1886AA022191E75300CC021B /* ReDataMangerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1886AA012191E75300CC021B /* ReDataMangerTests.swift */; };
 		1886AA0D2191E75300CC021B /* ReDataMangerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1886AA0C2191E75300CC021B /* ReDataMangerUITests.swift */; };
+		1886AA1E2191E79400CC021B /* MyCoreDataOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1886AA1B2191E79400CC021B /* MyCoreDataOperation.swift */; };
+		1886AA1F2191E79400CC021B /* MyRequestConstant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1886AA1C2191E79400CC021B /* MyRequestConstant.swift */; };
+		1886AA202191E79400CC021B /* MyRequestOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1886AA1D2191E79400CC021B /* MyRequestOperation.swift */; };
+		1886AA232191E7E200CC021B /* AppCommonExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1886AA222191E7E200CC021B /* AppCommonExt.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +51,10 @@
 		1886AA082191E75300CC021B /* ReDataMangerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ReDataMangerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1886AA0C2191E75300CC021B /* ReDataMangerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReDataMangerUITests.swift; sourceTree = "<group>"; };
 		1886AA0E2191E75300CC021B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1886AA1B2191E79400CC021B /* MyCoreDataOperation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MyCoreDataOperation.swift; sourceTree = "<group>"; };
+		1886AA1C2191E79400CC021B /* MyRequestConstant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MyRequestConstant.swift; sourceTree = "<group>"; };
+		1886AA1D2191E79400CC021B /* MyRequestOperation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MyRequestOperation.swift; sourceTree = "<group>"; };
+		1886AA222191E7E200CC021B /* AppCommonExt.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppCommonExt.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +105,8 @@
 		1886A9EB2191E75100CC021B /* ReDataManger */ = {
 			isa = PBXGroup;
 			children = (
+				1886AA212191E7D900CC021B /* AppExtension */,
+				1886AA1A2191E77600CC021B /* DataManager */,
 				1886A9EC2191E75100CC021B /* AppDelegate.swift */,
 				1886A9EE2191E75100CC021B /* ViewController.swift */,
 				1886A9F02191E75100CC021B /* Main.storyboard */,
@@ -123,6 +133,24 @@
 				1886AA0E2191E75300CC021B /* Info.plist */,
 			);
 			path = ReDataMangerUITests;
+			sourceTree = "<group>";
+		};
+		1886AA1A2191E77600CC021B /* DataManager */ = {
+			isa = PBXGroup;
+			children = (
+				1886AA1B2191E79400CC021B /* MyCoreDataOperation.swift */,
+				1886AA1C2191E79400CC021B /* MyRequestConstant.swift */,
+				1886AA1D2191E79400CC021B /* MyRequestOperation.swift */,
+			);
+			path = DataManager;
+			sourceTree = "<group>";
+		};
+		1886AA212191E7D900CC021B /* AppExtension */ = {
+			isa = PBXGroup;
+			children = (
+				1886AA222191E7E200CC021B /* AppCommonExt.swift */,
+			);
+			path = AppExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -257,7 +285,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				1886A9EF2191E75100CC021B /* ViewController.swift in Sources */,
+				1886AA202191E79400CC021B /* MyRequestOperation.swift in Sources */,
+				1886AA232191E7E200CC021B /* AppCommonExt.swift in Sources */,
+				1886AA1E2191E79400CC021B /* MyCoreDataOperation.swift in Sources */,
 				1886A9ED2191E75100CC021B /* AppDelegate.swift in Sources */,
+				1886AA1F2191E79400CC021B /* MyRequestConstant.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
