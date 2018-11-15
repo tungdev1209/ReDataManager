@@ -1,6 +1,6 @@
 //
 //  MyCoreDataOperation.swift
-//  ReDataManager
+//  MyCoreDataOperation
 //
 //  Created by Tung Nguyen on 10/24/18.
 //  Copyright © 2018 Tung Nguyen. All rights reserved.
@@ -49,8 +49,9 @@ class MyCoreDataOperation {
     // MARK: - Private funcs
     private func getContext() -> NSManagedObjectContext {
         var context: NSManagedObjectContext!
-        MyCoreDataManager.shared.executionQueue.sync {
-            switch mode {
+        MyCoreDataManager.shared.execute({ [weak self] in
+            guard let `self` = self else {return}
+            switch self.mode {
             case .Background:
                 context = MyCoreDataStack.shared.backgroundManagedObjectContext(true)
                 
@@ -60,7 +61,7 @@ class MyCoreDataOperation {
             default:
                 context = MyCoreDataStack.shared.managedObjectContext()
             }
-        }
+        }, asynchronously: false)
         return context
     }
     
@@ -84,21 +85,25 @@ class MyCoreDataOperation {
     }
     
     private func finalCompletion(_ compl: (() -> Void)?) {
-        let queue = delegateQueue == nil ? MyCoreDataManager.shared.completionQueue : delegateQueue!
+        var queue: DispatchQueue! = delegateQueue
+        if queue == nil {
+            queue = mode == .Main ? DispatchQueue.main : MyCoreDataManager.shared.completionQueue
+        }
         queue.async {
             compl?()
         }
     }
     
     // MARK: - Public funcs
-    func startup(_ modelName: String, completion: ((MyCoreDataError?) -> Void)?) {
+    func startup(_ modelName: String, modelPath: String, appsGroupName: String, completion: ((MyCoreDataError?) -> Void)?) {
         MyCoreDataManager.shared.cacheOperation(self)
-        MyCoreDataManager.shared.executionQueue.async(flags: .barrier) { [weak self] in
+        MyCoreDataManager.shared.startup({ [weak self] in
             guard let `self` = self else {return}
             var error: MyCoreDataError?
             let semaphore = DispatchSemaphore(value: 0)
-            MyCoreDataStack.shared.loadPersistentContainer(modelName, completion: { (coredataError) in
+            MyCoreDataStack.shared.loadPersistentContainer(modelName, modelPath: modelPath, appsGroupName: appsGroupName, completion: { (coredataError) in
                 error = coredataError
+                MyCoreDataManager.shared.loadPersistentSuccess = error == nil
                 semaphore.signal()
             })
             semaphore.wait()
@@ -107,7 +112,7 @@ class MyCoreDataOperation {
             DispatchQueue.main.async {
                 completion?(error)
             }
-        }
+        })
     }
     
     func shouldRequestAsynchronously(_ asyncRequest: Bool) -> MyCoreDataOperation {
@@ -187,7 +192,7 @@ class MyCoreDataOperation {
         
         var myError: MyCoreDataError?
         
-        MyCoreDataManager.shared.executionQueue.async(flags: .barrier) { [weak self] in
+        MyCoreDataManager.shared.execute({ [weak self] in
             guard let `self` = self else {return}
             
             self.context.performAndWait { [weak self] in
@@ -213,7 +218,7 @@ class MyCoreDataOperation {
                     MyCoreDataManager.shared.removeOperation(self)
                 }
             }
-        }
+        }, flags: .barrier)
         
         requestSemaphore?.wait()
         
@@ -236,7 +241,7 @@ class MyCoreDataOperation {
         
         var result: [T]?
         
-        MyCoreDataManager.shared.executionQueue.async { [weak self] in
+        MyCoreDataManager.shared.execute({ [weak self] in
             guard let `self` = self else {return}
             
             let semaphore = DispatchSemaphore(value: 0)
@@ -266,7 +271,7 @@ class MyCoreDataOperation {
                     MyCoreDataManager.shared.removeOperation(self)
                 }
             }
-        }
+        })
         
         // for sync request
         requestSemaphore?.wait()
@@ -288,7 +293,7 @@ class MyCoreDataOperation {
         
         var myError: MyCoreDataError?
         
-        MyCoreDataManager.shared.executionQueue.async(flags: .barrier) { [weak self] in
+        MyCoreDataManager.shared.execute({ [weak self] in
             guard let `self` = self else {return}
             
             // prepare attributes
@@ -318,7 +323,7 @@ class MyCoreDataOperation {
                     MyCoreDataManager.shared.removeOperation(self)
                 }
             }
-        }
+        }, flags: .barrier)
         
         // for sync request
         requestSemaphore?.wait()
@@ -341,6 +346,7 @@ class MyCoreDataOperation {
 
 fileprivate class MyCoreDataManager {
     static let shared = MyCoreDataManager()
+    var loadPersistentSuccess = false // TODO: use it
     var operations = [String: MyCoreDataOperation]()
     let operationQueue = DispatchQueue.init(label: "com.mycoredata.operation")
     let executionQueue = DispatchQueue.init(label: "com.mycoredata.execution", attributes: .concurrent)
@@ -358,6 +364,49 @@ fileprivate class MyCoreDataManager {
         operationQueue.sync { [weak self] in
             guard let `self` = self else {return}
             self.operations.removeValue(forKey: operation._id)
+        }
+    }
+    
+    func isExecutable() -> Bool {
+        if !loadPersistentSuccess {
+            print("Coredata ERROR => Failed to load Model")
+        }
+        return loadPersistentSuccess
+    }
+    
+    func startup(_ starting: (() -> Void)?) {
+        executionQueue.async(flags: .barrier) {
+            starting?()
+        }
+    }
+    
+    func execute(_ executing: (() -> Void)?, asynchronously: Bool = true) {
+        guard isExecutable() else {return}
+        var semaphore: DispatchSemaphore?
+        if !asynchronously {
+            semaphore = DispatchSemaphore(value: 0)
+        }
+        executionQueue.async {
+            executing?()
+            semaphore?.signal()
+        }
+        if !asynchronously {
+            semaphore?.wait()
+        }
+    }
+    
+    func execute(_ executing: (() -> Void)?, flags: DispatchWorkItemFlags, asynchronously: Bool = true) {
+        guard isExecutable() else {return}
+        var semaphore: DispatchSemaphore?
+        if !asynchronously {
+            semaphore = DispatchSemaphore(value: 0)
+        }
+        executionQueue.async(flags: flags) {
+            executing?()
+            semaphore?.signal()
+        }
+        if !asynchronously {
+            semaphore?.wait()
         }
     }
 }
@@ -393,27 +442,31 @@ fileprivate class MyCoreDataStack {
         return _contexts
     }()
     
-    func loadPersistentContainer(_ modelName: String, completion: ((MyCoreDataError) -> Void)?) {
-        initializePersistentContainer(modelName) { [weak self] (error) in
+    func loadPersistentContainer(_ modelName: String, modelPath: String, appsGroupName: String, completion: ((MyCoreDataError?) -> Void)?) {
+        initializePersistentContainer(modelName, modelPath: modelPath, appsGroupName: appsGroupName, completion: { [weak self] (error) in
             guard let `self` = self else {return}
             self.applyContextAttributes(self.persistentContainer.viewContext)
             completion?(error)
-        }
+        })
     }
     
-    private func initializePersistentContainer(_ modelName: String, completion: ((MyCoreDataError) -> Void)?) {
+    private func initializePersistentContainer(_ modelName: String, modelPath: String, appsGroupName: String, completion: ((MyCoreDataError?) -> Void)?) {
         /*
          The persistent container for the application. This implementation
          creates and returns a container, having loaded the store for the
          application to it. This property is optional since there are legitimate
          error conditions that could cause the creation of the store to fail.
          */
-        guard let modelPath = applicationDocumentsDirectory()?.appendingPathComponent(modelName + ".sqlite") else {
+        guard var appModelPathURL = applicationDocumentsDirectory(appsGroupName) else {
             completion?(MyCoreDataError.InvalidStoreURL)
             return
         }
+        if !modelPath.isEmpty {
+            appModelPathURL.appendPathComponent(modelPath)
+        }
+        appModelPathURL.appendPathComponent(modelName + ".sqlite")
         
-        let description = NSPersistentStoreDescription(url: modelPath)
+        let description = NSPersistentStoreDescription(url: appModelPathURL)
         description.shouldInferMappingModelAutomatically = true
         description.shouldMigrateStoreAutomatically = true
         description.shouldAddStoreAsynchronously = true
@@ -421,8 +474,8 @@ fileprivate class MyCoreDataStack {
         persistentContainer = NSPersistentContainer(name: modelName)
         persistentContainer.persistentStoreDescriptions = [description]
         persistentContainer.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            print("CoreData - Did load model at path: \(modelPath.path)")
-            var err = MyCoreDataError.Unknown
+            print("CoreData - Did load model at path: \(appModelPathURL.path)")
+            var err: MyCoreDataError?
             if let _ = error as NSError? {
                 // Replace this implementation with code to handle the error appropriately.
                 // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
@@ -447,8 +500,11 @@ fileprivate class MyCoreDataStack {
         context.mergePolicy = NSMergePolicy.mergeByPropertyStoreTrump
     }
     
-    func applicationDocumentsDirectory() -> URL? {
-        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+    func applicationDocumentsDirectory(_ groupName: String = "") -> URL? {
+        if groupName.isEmpty {
+            return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        }
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupName)
     }
     
     func managedObjectContext() -> NSManagedObjectContext {
@@ -469,9 +525,7 @@ fileprivate class MyCoreDataStack {
     
     func mergeChanges(_ batchUpdateResult: NSBatchUpdateResult?, context: NSManagedObjectContext) {
         guard let objectIDs = batchUpdateResult?.result as? [NSManagedObjectID] else {return}
-        let changes = [NSUpdatedObjectsKey: objectIDs]
-//        let remainContexts = contexts.allObjects.filter({ $0 != context })
-        NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: contexts.allObjects)
+        NSManagedObjectContext.mergeChanges(fromRemoteContextSave: [NSUpdatedObjectsKey: objectIDs], into: contexts.allObjects)
     }
     
     func managedObjectModel() -> NSManagedObjectModel {

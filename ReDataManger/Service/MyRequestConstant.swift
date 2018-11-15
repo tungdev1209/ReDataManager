@@ -1,6 +1,6 @@
 //
 //  MyRequestConstant.swift
-//  ReDataManager
+//  MyRequestOperation
 //
 //  Created by Tung Nguyen on 10/4/18.
 //  Copyright © 2018 Tung Nguyen. All rights reserved.
