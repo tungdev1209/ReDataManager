@@ -14,6 +14,8 @@ enum MyCoreDataError: Error {
     case FetchObjectFail
     case SaveObjectFail
     case UpdateObjectFail
+    case DeleteObjectFail
+    case DeleteObjectsFail
     case InvalidStoreURL
     case LoadStoreFail
     case Unknown
@@ -76,11 +78,17 @@ class MyCoreDataOperation {
         return fetch
     }
     
-    private func getUpdateRequest<T: NSManagedObject>(_ entityClass: T.Type) -> NSBatchUpdateRequest {
+    private func getBatchUpdateRequest<T: NSManagedObject>(_ entityClass: T.Type) -> NSBatchUpdateRequest {
         let request = NSBatchUpdateRequest(entityName: String(describing: T.self))
         request.predicate = predicate
         request.propertiesToUpdate = propertiesToUpdate
         request.resultType = NSBatchUpdateRequestResultType.updatedObjectIDsResultType
+        return request
+    }
+    
+    private func getBatchDeleteRequest<T: NSManagedObject>(_ entityClass: T.Type) -> NSBatchDeleteRequest {
+        let request = NSBatchDeleteRequest(fetchRequest: getFetchRequest(entityClass))
+        request.resultType = NSBatchDeleteRequestResultType.resultTypeObjectIDs
         return request
     }
     
@@ -305,9 +313,9 @@ class MyCoreDataOperation {
                 self.operating?(self)
                 
                 do {
-                    let result = try self.context.execute(self.getUpdateRequest(entityClass)) as? NSBatchUpdateResult
+                    let result = try self.context.execute(self.getBatchUpdateRequest(entityClass)) as? NSBatchUpdateResult
                     print("CoreData - Did batch update: \(String(describing: result))")
-                    MyCoreDataStack.shared.mergeChanges(result, context: self.context)
+                    MyCoreDataStack.shared.mergeChanges(result?.result as? [NSManagedObjectID], context: self.context)
                 }
                 catch {
                     print("Failed to batch update \(String(describing: T.self)) - error: \(error)")
@@ -336,7 +344,62 @@ class MyCoreDataOperation {
     // MARK: Delete
     func executeDelete(_ object: NSManagedObject, completion: ((MyCoreDataOperation, MyCoreDataError?) -> Void)?) {
         context.delete(object)
-        return executeSave(completion)
+        executeSave({ (operation, error) in
+            var myError = error
+            if let _ = myError {
+                myError = MyCoreDataError.DeleteObjectFail
+            }
+            completion?(operation, myError)
+        })
+    }
+    
+    // MARK: Batch Delete
+    func executeBatchDelete<T: NSManagedObject>(_ entityClass: T.Type, completion: ((MyCoreDataOperation, MyCoreDataError?) -> Void)?) {
+        // cache this operation
+        MyCoreDataManager.shared.cacheOperation(self)
+        
+        var requestSemaphore: DispatchSemaphore?
+        if !shouldRequestAsynchronously {
+            requestSemaphore = DispatchSemaphore(value: 0)
+        }
+        
+        var myError: MyCoreDataError?
+        
+        MyCoreDataManager.shared.execute({ [weak self] in
+            guard let `self` = self else {return}
+            
+            self.context.performAndWait { [weak self] in
+                guard let `self` = self else {return}
+                
+                self.operating?(self)
+                
+                do {
+                    let result = try self.context.execute(self.getBatchDeleteRequest(entityClass)) as? NSBatchDeleteResult
+                    print("CoreData - Did batch delete: \(String(describing: result))")
+                    MyCoreDataStack.shared.mergeChanges(result?.result as? [NSManagedObjectID], context: self.context)
+                }
+                catch {
+                    print("Failed to batch delete \(String(describing: T.self)) - error: \(error)")
+                    myError = MyCoreDataError.DeleteObjectsFail
+                }
+            }
+            requestSemaphore?.signal()
+            
+            // for async request
+            if self.shouldRequestAsynchronously {
+                self.finalCompletion {
+                    completion?(self, myError)
+                    MyCoreDataManager.shared.removeOperation(self)
+                }
+            }
+            }, flags: .barrier)
+        
+        // for sync request
+        requestSemaphore?.wait()
+        if !shouldRequestAsynchronously {
+            completion?(self, myError)
+            MyCoreDataManager.shared.removeOperation(self)
+        }
     }
     
     deinit {
@@ -463,6 +526,10 @@ fileprivate class MyCoreDataStack {
         }
         if !modelPath.isEmpty {
             appModelPathURL.appendPathComponent(modelPath)
+            if !FileManager.default.createDirectoryIfNeeded(appModelPathURL.path, attributes: nil) {
+                completion?(MyCoreDataError.InvalidStoreURL)
+                return
+            }
         }
         appModelPathURL.appendPathComponent(modelName + ".sqlite")
         
@@ -523,9 +590,9 @@ fileprivate class MyCoreDataStack {
         }
     }
     
-    func mergeChanges(_ batchUpdateResult: NSBatchUpdateResult?, context: NSManagedObjectContext) {
-        guard let objectIDs = batchUpdateResult?.result as? [NSManagedObjectID] else {return}
-        NSManagedObjectContext.mergeChanges(fromRemoteContextSave: [NSUpdatedObjectsKey: objectIDs], into: contexts.allObjects)
+    func mergeChanges(_ objectIDs: [NSManagedObjectID]?, context: NSManagedObjectContext) {
+        guard let objIDs = objectIDs else {return}
+        NSManagedObjectContext.mergeChanges(fromRemoteContextSave: [NSUpdatedObjectsKey: objIDs], into: contexts.allObjects)
     }
     
     func managedObjectModel() -> NSManagedObjectModel {

@@ -8,6 +8,8 @@
 
 import UIKit
 
+let AppName = Bundle.main.getAppName()
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 

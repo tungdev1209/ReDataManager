@@ -110,7 +110,6 @@
 				1A26CA10219D6AB3007D0730 /* Extension */,
 				1A26CA12219D6AB3007D0730 /* View */,
 				1A26CA14219D6AB3007D0730 /* Service */,
-				1A26CA0F219D6AB3007D0730 /* ThirdParty */,
 				1886A9EC2191E75100CC021B /* AppDelegate.swift */,
 				1886A9EE2191E75100CC021B /* ViewController.swift */,
 				1886A9F02191E75100CC021B /* Main.storyboard */,
@@ -137,13 +136,6 @@
 				1886AA0E2191E75300CC021B /* Info.plist */,
 			);
 			path = ReDataMangerUITests;
-			sourceTree = "<group>";
-		};
-		1A26CA0F219D6AB3007D0730 /* ThirdParty */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = ThirdParty;
 			sourceTree = "<group>";
 		};
 		1A26CA10219D6AB3007D0730 /* Extension */ = {

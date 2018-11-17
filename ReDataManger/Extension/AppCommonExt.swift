@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import WebKit
 import CommonCrypto
 
 extension String {
@@ -32,52 +33,6 @@ extension String {
             return true
         }
         return false
-    }
-    
-    func dataFromJPGBase64() -> Data? {
-        let plainBase64String = self.replacingOccurrences(of: "data:image/jpg;base64,", with: "")
-        return Data(base64Encoded: plainBase64String, options: .ignoreUnknownCharacters)
-    }
-    
-    func to128BarImage() -> UIImage? {
-
-        let data = self.data(using: String.Encoding.ascii)
-        
-        if let filter = CIFilter(name: "CICode128BarcodeGenerator") {
-            filter.setDefaults()
-            filter.setValue(7.00, forKey: "inputQuietSpace")
-            filter.setValue(data, forKey: "inputMessage")
-            let transform = CGAffineTransform(scaleX: 3, y: 3)
-            
-            if let output = filter.outputImage?.transformed(by: transform) {
-                let context:CIContext = CIContext.init(options: nil)
-                let cgImage:CGImage = context.createCGImage(output, from: output.extent)!
-                let rawImage:UIImage = UIImage.init(cgImage: cgImage)
-                
-                let cgimage: CGImage = (rawImage.cgImage)!
-                let cropZone = CGRect(x: 0, y: 0, width: Int(rawImage.size.width), height: Int(rawImage.size.height))
-                let cWidth: size_t  = size_t(cropZone.size.width)
-                let cHeight: size_t  = size_t(cropZone.size.height)
-                let bitsPerComponent: size_t = cgimage.bitsPerComponent
-                let bytesPerRow = (cgimage.bytesPerRow) / (cgimage.width  * cWidth)
-                
-                let context2: CGContext = CGContext(data: nil, width: cWidth, height: cHeight, bitsPerComponent: bitsPerComponent, bytesPerRow: bytesPerRow, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: cgimage.bitmapInfo.rawValue)!
-                
-                context2.draw(cgimage, in: cropZone)
-                
-                let result: CGImage  = context2.makeImage()!
-                let finalImage = UIImage(cgImage: result)
-                
-                return finalImage
-                
-            }
-        }
-        
-        return nil
-    }
-    
-    func isJPGBase64() -> Bool {
-        return self.contains("data:image/jpg;base64,")
     }
 }
 
@@ -105,7 +60,7 @@ extension UIBarButtonItem {
     
     func image(_ i: UIImage?) -> UIBarButtonItem {
         image = i
-        var width = 23
+        var width = 30
         if UIDevice.current.isIpad() {
             width = 40
         }
@@ -146,6 +101,43 @@ extension UIBarButtonItem {
     }
 }
 
+private var kLoadHTMLCompletion: UInt8 = 0
+private var kNavigationHandler: UInt8 = 0
+extension WKWebView: WKNavigationDelegate {
+    typealias HTMLCompletion = (() -> Void)
+    
+    var loadHTMLCompletion: HTMLCompletion? {
+        get {
+            return objc_getAssociatedObject(self, &kLoadHTMLCompletion) as? HTMLCompletion
+        }
+        set(block) {
+            objc_setAssociatedObject(self, &kLoadHTMLCompletion, block, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
+    
+    private var navigationHandler: WKNavigationDelegate? {
+        get {
+            return objc_getAssociatedObject(self, &kNavigationHandler) as? WKNavigationDelegate
+        }
+        set(handler) {
+            objc_setAssociatedObject(self, &kNavigationHandler, handler, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
+    
+    func loadHTMLString(_ string: String, baseURL: URL?, completion: (() -> Void)?) {
+        loadHTMLCompletion = completion
+        navigationHandler = WebNavigationHandler()
+        navigationDelegate = navigationHandler
+        loadHTMLString(string, baseURL: baseURL)
+    }
+}
+
+class WebNavigationHandler: NSObject, WKNavigationDelegate {
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        webView.loadHTMLCompletion?()
+    }
+}
+
 extension UINavigationBar {
     func transparent() {
         setBackgroundImage(UIImage(), for: .default)
@@ -171,6 +163,29 @@ extension Bundle {
             urls = _urls
         }
         return urls
+    }
+    
+    func getAppName() -> String {
+        var appName = ""
+        if let name = object(forInfoDictionaryKey: "CFBundleName") as? String {
+            appName = name
+        }
+        return appName
+    }
+}
+
+extension FileManager {
+    func createDirectoryIfNeeded(_ path: String, attributes: [FileAttributeKey : Any]? = nil) -> Bool {
+        var existing = fileExists(atPath: path)
+        if !existing {
+            do {
+                try createDirectory(atPath: path, withIntermediateDirectories: true, attributes: attributes)
+                existing = true
+            } catch {
+                print("Failed to create dir at path: \(path)")
+            }
+        }
+        return existing
     }
 }
 
@@ -243,10 +258,6 @@ extension Data {
         return cryptData
     }
     
-    func toJPGBase64() -> String {
-        return "data:image/jpg;base64," + self.base64EncodedString()
-    }
-    
     func toUIImage() -> UIImage? {
         return UIImage(data: self)
     }
@@ -312,34 +323,6 @@ extension NSUUID {
             uuidString = uuid.uuidString
         }
         return uuidString
-    }
-}
-
-extension UIColor {
-    static var major: UIColor {
-        get {
-            return UIColor(red: 86.0/255.0, green: 203.0/255.0, blue: 249.0/255.0, alpha: 1.0)
-        }
-    }
-    
-    static var appGrey: UIColor {
-        get {
-            return UIColor(red: 49.0/255.0, green: 59.0/255.0, blue: 78.0/255.0, alpha: 1.0)
-        }
-    }
-    
-    static var systemBlue: UIColor {
-        get {
-            return UIColor(red: 0.0, green: 122.0/255.0, blue: 1.0, alpha: 1.0)
-        }
-    }
-}
-
-extension CGSize {
-    static var creditCard: CGSize {
-        get {
-            return CGSize(width: 348.0, height: 220.0)
-        }
     }
 }
 
