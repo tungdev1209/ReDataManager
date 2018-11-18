@@ -82,41 +82,6 @@ class MyCoreDataOperationConfiguration {
     }
 }
 
-//protocol MyCoreDataOperationInterface: class {
-//    var predicate: NSPredicate? {get set}
-//    var sortDescriptors: [NSSortDescriptor]? {get set}
-//    var returnsObjectsAsFaults: Bool {get set}
-//    var propertiesToUpdate: [AnyHashable: Any]? {get set}
-//    var fetchLimit: Int {get set}
-//    var shouldRequestAsynchronously: Bool {get set}
-//    var delegateQueue: DispatchQueue? {get set}
-//    var operating: ((MyCoreDataOperationInterface) -> Void)? {get set}
-//
-//    var context: NSManagedObjectContext! {get}
-//    var mode: MyCoreDataMode {get}
-//
-//    init(_ contextMode: MyCoreDataMode)
-//
-//    func startup(_ modelName: String, modelPath: String, appsGroupName: String, completion: ((MyCoreDataError?) -> Void)?)
-//
-//    func shouldRequestAsynchronously(_ asyncRequest: Bool) -> MyCoreDataOperationInterface
-//    func delegateQueue(_ queue: DispatchQueue?) -> MyCoreDataOperationInterface
-//    func operating(_ op: ((MyCoreDataOperationInterface) -> Void)?) -> MyCoreDataOperationInterface
-//    func predicate(_ pre: NSPredicate?) -> MyCoreDataOperationInterface
-//    func sortDescriptors(_ sorts: [NSSortDescriptor]?) -> MyCoreDataOperationInterface
-//    func returnsObjectsAsFaults(_ re: Bool) -> MyCoreDataOperationInterface
-//    func fetchLimit(_ limit: Int) -> MyCoreDataOperationInterface
-//    func convertObject<T: NSManagedObject>(_ object: T, toMain: Bool) -> T
-//    func convertObject<T: NSManagedObject>(_ object: T) -> T
-//    func createObject<T: NSManagedObject>(_ entityClass: T.Type) -> T
-//    func createObjectIfNeeded<T: NSManagedObject>(_ object: T?) -> T
-//    func executeSave(_ completion: ((MyCoreDataOperationInterface, MyCoreDataError?) -> Void)?)
-//    func executeFetch<T: NSManagedObject>(_ entityClass: T.Type, completion: ((MyCoreDataOperationInterface, [T]?) -> Void)?)
-//    func executeBatchUpdate<T: NSManagedObject>(_ propertiesToUpdate: [AnyHashable: Any]?, entityClass: T.Type, completion: ((MyCoreDataOperationInterface, MyCoreDataError?) -> Void)?)
-//    func executeDelete(_ object: NSManagedObject, completion: ((MyCoreDataOperationInterface, MyCoreDataError?) -> Void)?)
-//    func executeBatchDelete<T: NSManagedObject>(_ entityClass: T.Type, completion: ((MyCoreDataOperationInterface, MyCoreDataError?) -> Void)?)
-//}
-
 class MyCoreDataOperation {
     var predicate: NSPredicate?
     var sortDescriptors: [NSSortDescriptor]?
