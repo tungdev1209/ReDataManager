@@ -19,6 +19,14 @@
 		18AE453921A151630036199C /* MyRequestOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453321A151630036199C /* MyRequestOperation.swift */; };
 		18AE453A21A151630036199C /* MyRequestConstant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453421A151630036199C /* MyRequestConstant.swift */; };
 		18AE453B21A151630036199C /* MyAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453621A151630036199C /* MyAlert.swift */; };
+		18AE453E21A170350036199C /* MyDataManager.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453C21A170350036199C /* MyDataManager.xcdatamodeld */; };
+		18AE454121A176C70036199C /* MyCoreDataOperationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE454021A176C70036199C /* MyCoreDataOperationTests.swift */; };
+		18AE454221A1862B0036199C /* MyCoreDataOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453221A151630036199C /* MyCoreDataOperation.swift */; };
+		18AE454321A1862B0036199C /* MyRequestOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453321A151630036199C /* MyRequestOperation.swift */; };
+		18AE454421A1862B0036199C /* MyRequestConstant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453421A151630036199C /* MyRequestConstant.swift */; };
+		18AE454521A186320036199C /* MyDataManager.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453C21A170350036199C /* MyDataManager.xcdatamodeld */; };
+		18AE454621A186380036199C /* AppCommonExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453021A151630036199C /* AppCommonExt.swift */; };
+		18AE454721A1863B0036199C /* MyAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453621A151630036199C /* MyAlert.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +65,8 @@
 		18AE453321A151630036199C /* MyRequestOperation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MyRequestOperation.swift; sourceTree = "<group>"; };
 		18AE453421A151630036199C /* MyRequestConstant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MyRequestConstant.swift; sourceTree = "<group>"; };
 		18AE453621A151630036199C /* MyAlert.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MyAlert.swift; sourceTree = "<group>"; };
+		18AE453D21A170350036199C /* MyDataManager.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = MyDataManager.xcdatamodel; sourceTree = "<group>"; };
+		18AE454021A176C70036199C /* MyCoreDataOperationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyCoreDataOperationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -116,6 +126,7 @@
 				18AE44FB21A151330036199C /* Assets.xcassets */,
 				18AE44FD21A151330036199C /* LaunchScreen.storyboard */,
 				18AE450021A151330036199C /* Info.plist */,
+				18AE453C21A170350036199C /* MyDataManager.xcdatamodeld */,
 			);
 			path = MyDataManager;
 			sourceTree = "<group>";
@@ -123,6 +134,7 @@
 		18AE450821A151330036199C /* MyDataManagerTests */ = {
 			isa = PBXGroup;
 			children = (
+				18AE453F21A176AF0036199C /* Service */,
 				18AE450921A151330036199C /* MyDataManagerTests.swift */,
 				18AE450B21A151330036199C /* Info.plist */,
 			);
@@ -162,6 +174,14 @@
 				18AE453621A151630036199C /* MyAlert.swift */,
 			);
 			path = View;
+			sourceTree = "<group>";
+		};
+		18AE453F21A176AF0036199C /* Service */ = {
+			isa = PBXGroup;
+			children = (
+				18AE454021A176C70036199C /* MyCoreDataOperationTests.swift */,
+			);
+			path = Service;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -300,6 +320,7 @@
 				18AE453921A151630036199C /* MyRequestOperation.swift in Sources */,
 				18AE44F521A151300036199C /* AppDelegate.swift in Sources */,
 				18AE453A21A151630036199C /* MyRequestConstant.swift in Sources */,
+				18AE453E21A170350036199C /* MyDataManager.xcdatamodeld in Sources */,
 				18AE453821A151630036199C /* MyCoreDataOperation.swift in Sources */,
 				18AE453721A151630036199C /* AppCommonExt.swift in Sources */,
 			);
@@ -309,7 +330,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				18AE454121A176C70036199C /* MyCoreDataOperationTests.swift in Sources */,
+				18AE454421A1862B0036199C /* MyRequestConstant.swift in Sources */,
+				18AE454221A1862B0036199C /* MyCoreDataOperation.swift in Sources */,
+				18AE454521A186320036199C /* MyDataManager.xcdatamodeld in Sources */,
 				18AE450A21A151330036199C /* MyDataManagerTests.swift in Sources */,
+				18AE454621A186380036199C /* AppCommonExt.swift in Sources */,
+				18AE454721A1863B0036199C /* MyAlert.swift in Sources */,
+				18AE454321A1862B0036199C /* MyRequestOperation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -630,6 +658,19 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		18AE453C21A170350036199C /* MyDataManager.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				18AE453D21A170350036199C /* MyDataManager.xcdatamodel */,
+			);
+			currentVersion = 18AE453D21A170350036199C /* MyDataManager.xcdatamodel */;
+			path = MyDataManager.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = 18AE44E921A151300036199C /* Project object */;
 }

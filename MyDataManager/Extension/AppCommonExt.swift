@@ -103,7 +103,7 @@ extension UIBarButtonItem {
 
 private var kLoadHTMLCompletion: UInt8 = 0
 private var kNavigationHandler: UInt8 = 0
-extension WKWebView: WKNavigationDelegate {
+extension WKWebView {
     typealias HTMLCompletion = (() -> Void)
     
     var loadHTMLCompletion: HTMLCompletion? {

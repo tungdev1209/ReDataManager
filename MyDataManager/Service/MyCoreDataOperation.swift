@@ -28,6 +28,95 @@ enum MyCoreDataMode {
     case Unknown
 }
 
+enum MyCoreDataStoreType {
+    case SQLite
+    case Binary
+    case InMemory
+    case Key
+    case UUIDKey
+    
+    func stringValue() -> String {
+        switch self {
+        case .Binary:
+            return NSBinaryStoreType
+            
+        case .InMemory:
+            return NSInMemoryStoreType
+            
+        case .Key:
+            return NSStoreTypeKey
+            
+        case .UUIDKey:
+            return NSStoreUUIDKey
+            
+        default:
+            return NSSQLiteStoreType
+        }
+    }
+}
+
+class MyCoreDataOperationConfiguration {
+    var modelName = ""
+    var modelPath = ""
+    var appsGroupName = ""
+    var storeType = MyCoreDataStoreType.SQLite
+    
+    convenience init(_ modelName: String) {
+        self.init()
+        self.modelName = modelName
+    }
+    
+    func modelPath(_ mPath: String) -> MyCoreDataOperationConfiguration {
+        modelPath = mPath
+        return self
+    }
+    
+    func appsGroupName(_ agName: String) -> MyCoreDataOperationConfiguration {
+        appsGroupName = agName
+        return self
+    }
+    
+    func storeType(_ type: MyCoreDataStoreType) -> MyCoreDataOperationConfiguration {
+        storeType = type
+        return self
+    }
+}
+
+//protocol MyCoreDataOperationInterface: class {
+//    var predicate: NSPredicate? {get set}
+//    var sortDescriptors: [NSSortDescriptor]? {get set}
+//    var returnsObjectsAsFaults: Bool {get set}
+//    var propertiesToUpdate: [AnyHashable: Any]? {get set}
+//    var fetchLimit: Int {get set}
+//    var shouldRequestAsynchronously: Bool {get set}
+//    var delegateQueue: DispatchQueue? {get set}
+//    var operating: ((MyCoreDataOperationInterface) -> Void)? {get set}
+//
+//    var context: NSManagedObjectContext! {get}
+//    var mode: MyCoreDataMode {get}
+//
+//    init(_ contextMode: MyCoreDataMode)
+//
+//    func startup(_ modelName: String, modelPath: String, appsGroupName: String, completion: ((MyCoreDataError?) -> Void)?)
+//
+//    func shouldRequestAsynchronously(_ asyncRequest: Bool) -> MyCoreDataOperationInterface
+//    func delegateQueue(_ queue: DispatchQueue?) -> MyCoreDataOperationInterface
+//    func operating(_ op: ((MyCoreDataOperationInterface) -> Void)?) -> MyCoreDataOperationInterface
+//    func predicate(_ pre: NSPredicate?) -> MyCoreDataOperationInterface
+//    func sortDescriptors(_ sorts: [NSSortDescriptor]?) -> MyCoreDataOperationInterface
+//    func returnsObjectsAsFaults(_ re: Bool) -> MyCoreDataOperationInterface
+//    func fetchLimit(_ limit: Int) -> MyCoreDataOperationInterface
+//    func convertObject<T: NSManagedObject>(_ object: T, toMain: Bool) -> T
+//    func convertObject<T: NSManagedObject>(_ object: T) -> T
+//    func createObject<T: NSManagedObject>(_ entityClass: T.Type) -> T
+//    func createObjectIfNeeded<T: NSManagedObject>(_ object: T?) -> T
+//    func executeSave(_ completion: ((MyCoreDataOperationInterface, MyCoreDataError?) -> Void)?)
+//    func executeFetch<T: NSManagedObject>(_ entityClass: T.Type, completion: ((MyCoreDataOperationInterface, [T]?) -> Void)?)
+//    func executeBatchUpdate<T: NSManagedObject>(_ propertiesToUpdate: [AnyHashable: Any]?, entityClass: T.Type, completion: ((MyCoreDataOperationInterface, MyCoreDataError?) -> Void)?)
+//    func executeDelete(_ object: NSManagedObject, completion: ((MyCoreDataOperationInterface, MyCoreDataError?) -> Void)?)
+//    func executeBatchDelete<T: NSManagedObject>(_ entityClass: T.Type, completion: ((MyCoreDataOperationInterface, MyCoreDataError?) -> Void)?)
+//}
+
 class MyCoreDataOperation {
     var predicate: NSPredicate?
     var sortDescriptors: [NSSortDescriptor]?
@@ -103,19 +192,19 @@ class MyCoreDataOperation {
     }
     
     // MARK: - Public funcs
-    func startup(_ modelName: String, modelPath: String, appsGroupName: String, completion: ((MyCoreDataError?) -> Void)?) {
-        MyCoreDataManager.shared.cacheOperation(self)
-        MyCoreDataManager.shared.startup({ [weak self] in
-            guard let `self` = self else {return}
+    class func startup(_ configuration: MyCoreDataOperationConfiguration, completion: ((MyCoreDataError?) -> Void)?) {
+        let operation = MyCoreDataOperation()
+        MyCoreDataManager.shared.cacheOperation(operation)
+        MyCoreDataManager.shared.startup({
             var error: MyCoreDataError?
             let semaphore = DispatchSemaphore(value: 0)
-            MyCoreDataStack.shared.loadPersistentContainer(modelName, modelPath: modelPath, appsGroupName: appsGroupName, completion: { (coredataError) in
+            MyCoreDataStack.shared.loadPersistentContainer(configuration) { (coredataError) in
                 error = coredataError
                 MyCoreDataManager.shared.loadPersistentSuccess = error == nil
                 semaphore.signal()
-            })
+            }
             semaphore.wait()
-            MyCoreDataManager.shared.removeOperation(self)
+            MyCoreDataManager.shared.removeOperation(operation)
             
             DispatchQueue.main.async {
                 completion?(error)
@@ -505,40 +594,41 @@ fileprivate class MyCoreDataStack {
         return _contexts
     }()
     
-    func loadPersistentContainer(_ modelName: String, modelPath: String, appsGroupName: String, completion: ((MyCoreDataError?) -> Void)?) {
-        initializePersistentContainer(modelName, modelPath: modelPath, appsGroupName: appsGroupName, completion: { [weak self] (error) in
+    func loadPersistentContainer(_ configuration: MyCoreDataOperationConfiguration, completion: ((MyCoreDataError?) -> Void)?) {
+        initializePersistentContainer(configuration) { [weak self] (error) in
             guard let `self` = self else {return}
             self.applyContextAttributes(self.persistentContainer.viewContext)
             completion?(error)
-        })
+        }
     }
     
-    private func initializePersistentContainer(_ modelName: String, modelPath: String, appsGroupName: String, completion: ((MyCoreDataError?) -> Void)?) {
+    private func initializePersistentContainer(_ configuration: MyCoreDataOperationConfiguration, completion: ((MyCoreDataError?) -> Void)?) {
         /*
          The persistent container for the application. This implementation
          creates and returns a container, having loaded the store for the
          application to it. This property is optional since there are legitimate
          error conditions that could cause the creation of the store to fail.
          */
-        guard var appModelPathURL = applicationDocumentsDirectory(appsGroupName) else {
+        guard var appModelPathURL = applicationDocumentsDirectory(configuration.appsGroupName) else {
             completion?(MyCoreDataError.InvalidStoreURL)
             return
         }
-        if !modelPath.isEmpty {
-            appModelPathURL.appendPathComponent(modelPath)
+        if !configuration.modelPath.isEmpty {
+            appModelPathURL.appendPathComponent(configuration.modelPath)
             if !FileManager.default.createDirectoryIfNeeded(appModelPathURL.path, attributes: nil) {
                 completion?(MyCoreDataError.InvalidStoreURL)
                 return
             }
         }
-        appModelPathURL.appendPathComponent(modelName + ".sqlite")
+        appModelPathURL.appendPathComponent(configuration.modelName + ".sqlite")
         
         let description = NSPersistentStoreDescription(url: appModelPathURL)
         description.shouldInferMappingModelAutomatically = true
         description.shouldMigrateStoreAutomatically = true
         description.shouldAddStoreAsynchronously = true
+        description.type = configuration.storeType.stringValue()
         
-        persistentContainer = NSPersistentContainer(name: modelName)
+        persistentContainer = NSPersistentContainer(name: configuration.modelName)
         persistentContainer.persistentStoreDescriptions = [description]
         persistentContainer.loadPersistentStores(completionHandler: { (storeDescription, error) in
             print("CoreData - Did load model at path: \(appModelPathURL.path)")
