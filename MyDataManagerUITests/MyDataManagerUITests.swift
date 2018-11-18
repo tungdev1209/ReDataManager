@@ -1,14 +1,14 @@
 //
-//  ReDataMangerUITests.swift
-//  ReDataMangerUITests
+//  MyDataManagerUITests.swift
+//  MyDataManagerUITests
 //
-//  Created by Tung Nguyen on 11/6/18.
+//  Created by Tung Nguyen on 11/18/18.
 //  Copyright © 2018 Tung Nguyen. All rights reserved.
 //
 
 import XCTest
 
-class ReDataMangerUITests: XCTestCase {
+class MyDataManagerUITests: XCTestCase {
 
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.

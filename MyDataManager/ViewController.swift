@@ -1,8 +1,8 @@
 //
 //  ViewController.swift
-//  ReDataManger
+//  MyDataManager
 //
-//  Created by Tung Nguyen on 11/6/18.
+//  Created by Tung Nguyen on 11/18/18.
 //  Copyright © 2018 Tung Nguyen. All rights reserved.
 //
 
