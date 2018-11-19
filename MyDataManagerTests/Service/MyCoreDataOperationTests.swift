@@ -8,6 +8,8 @@
 
 import XCTest
 
+// https://medium.com/flawless-app-stories/cracking-the-tests-for-core-data-15ef893a3fee
+
 class MyCoreDataOperationTests: XCTestCase {
 
     override func setUp() {
