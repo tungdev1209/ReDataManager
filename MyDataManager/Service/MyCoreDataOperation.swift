@@ -60,6 +60,7 @@ class MyCoreDataOperationConfiguration {
     var modelPath = ""
     var appsGroupName = ""
     var storeType = MyCoreDataStoreType.SQLite
+    var shouldLoadStoreAsynchronously = true
     
     convenience init(_ modelName: String) {
         self.init()
@@ -78,6 +79,11 @@ class MyCoreDataOperationConfiguration {
     
     func storeType(_ type: MyCoreDataStoreType) -> MyCoreDataOperationConfiguration {
         storeType = type
+        return self
+    }
+    
+    func shouldLoadStoreAsynchronously(_ loadAsync: Bool) -> MyCoreDataOperationConfiguration {
+        shouldLoadStoreAsynchronously = loadAsync
         return self
     }
 }
@@ -396,15 +402,20 @@ class MyCoreDataOperation {
     }
     
     // MARK: Delete
-    func executeDelete(_ object: NSManagedObject, completion: ((MyCoreDataOperation, MyCoreDataError?) -> Void)?) {
+    func executeDelete(_ object: NSManagedObject, save: Bool = false, completion: ((MyCoreDataOperation, MyCoreDataError?) -> Void)? = nil) {
         context.delete(object)
-        executeSave({ (operation, error) in
-            var myError = error
-            if let _ = myError {
-                myError = MyCoreDataError.DeleteObjectFail
-            }
-            completion?(operation, myError)
-        })
+        if save {
+            executeSave({ (operation, error) in
+                var myError = error
+                if let _ = myError {
+                    myError = MyCoreDataError.DeleteObjectFail
+                }
+                completion?(operation, myError)
+            })
+        }
+        else {
+            completion?(self, nil)
+        }
     }
     
     // MARK: Batch Delete
@@ -590,7 +601,7 @@ fileprivate class MyCoreDataStack {
         let description = NSPersistentStoreDescription(url: appModelPathURL)
         description.shouldInferMappingModelAutomatically = true
         description.shouldMigrateStoreAutomatically = true
-        description.shouldAddStoreAsynchronously = true
+        description.shouldAddStoreAsynchronously = configuration.shouldLoadStoreAsynchronously
         description.type = configuration.storeType.stringValue()
         
         persistentContainer = NSPersistentContainer(name: configuration.modelName)

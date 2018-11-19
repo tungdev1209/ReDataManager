@@ -12,15 +12,34 @@ class MyCoreDataOperationTests: XCTestCase {
 
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
+        
+        MyCoreDataOperation.startup(MyCoreDataOperationConfiguration(Bundle.main.getAppName())
+            .storeType(MyCoreDataStoreType.InMemory)
+            .shouldLoadStoreAsynchronously(false))
+        { (error) in
+            print("Did startup - \(error == nil)")
+        }
     }
 
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
+        
+        MyCoreDataOperation(.Background).executeBatchDelete(Category.self) { (_, error) in
+            print("Did flush data - \(error == nil)")
+        }
     }
 
-    func testStartup() {
+    func testSave() {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct results.
+        
+        expectatio
+        MyCoreDataOperation(.Background).operating({ (operation) in
+            let category = operation.createObject(Category.self)
+            category.title = "Action"
+        }).executeSave { (_, error) in
+            
+        }
     }
 
     func testPerformanceExample() {
