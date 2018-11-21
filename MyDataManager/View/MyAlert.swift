@@ -14,10 +14,9 @@ class MyAlert {
     var completion: (() -> Void)?
     var animated: Bool = true
     
-    class func create(_ message: String?) -> MyAlert {
-        let myAlert = MyAlert()
-        myAlert.alert = UIAlertController(title: myAlert.title, message: message, preferredStyle: UIAlertController.Style.alert)
-        return myAlert
+    convenience init(_ message: String?) {
+        self.init()
+        alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
     }
     
     func title(_ title: String) -> MyAlert {
