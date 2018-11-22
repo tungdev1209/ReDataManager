@@ -17,6 +17,25 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
+        MyCoreDataOperation.startup(MyCoreDataOperationConfiguration(Bundle.main.getAppName())
+            .storeType(MyCoreDataStoreType.SQLite)
+            .shouldLoadStoreAsynchronously(true))
+        { (error) in
+            print("Did startup - \(error == nil)")
+            
+            MyCoreDataOperation(.Background).operating({ (operation) in
+                let category = operation.createObject(Category.self)
+                category.title = "Action"
+            }).executeSave { (_, error) in
+                print("Did save - \(error == nil)")
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 1, execute: {
+                MyCoreDataOperation(.Background).executeBatchDelete(Category.self) { (_, error) in
+                    print("Did flush data - \(error == nil)")
+                }
+            })
+        }
     }
 
 }

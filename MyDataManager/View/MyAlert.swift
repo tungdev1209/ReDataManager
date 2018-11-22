@@ -25,8 +25,7 @@ class MyAlert {
     }
     
     func action(_ title: String?, style: UIAlertAction.Style, handler: ((UIAlertAction) -> Void)? = nil) -> MyAlert {
-        let alertAction = UIAlertAction(title: title, style: style, handler: handler)
-        alert.addAction(alertAction)
+        alert.addAction(UIAlertAction(title: title, style: style, handler: handler))
         return self
     }
     

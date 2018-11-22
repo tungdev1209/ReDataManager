@@ -26,8 +26,13 @@ class MyCoreDataOperationTests: XCTestCase {
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
         
-        MyCoreDataOperation(.Background).executeBatchDelete(Category.self) { (_, error) in
-            print("Did flush data - \(error == nil)")
+        MyCoreDataOperation(.Background).executeFetch(Category.self) { (operation, cats) in
+            cats?.forEach({ (cat) in
+                operation.executeDelete(cat)
+            })
+            operation.executeSave({ (_, error) in
+                print("Did flush data - \(error == nil)")
+            })
         }
     }
 
@@ -35,7 +40,6 @@ class MyCoreDataOperationTests: XCTestCase {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct results.
         
-        expectatio
         MyCoreDataOperation(.Background).operating({ (operation) in
             let category = operation.createObject(Category.self)
             category.title = "Action"
