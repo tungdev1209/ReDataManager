@@ -24,7 +24,7 @@ enum MyCoreDataError: Error {
 enum MyCoreDataMode {
     case Main
     case Background
-    case BackgroundScoped
+//    case BackgroundScoped
     case Unknown
 }
 
@@ -97,7 +97,7 @@ class MyCoreDataOperation {
     var shouldRequestAsynchronously = true
     weak var delegateQueue: DispatchQueue?
     var operating: ((MyCoreDataOperation) -> Void)?
-    private(set) var context: NSManagedObjectContext!
+    private(set) weak var context: NSManagedObjectContext?
     private(set) var mode = MyCoreDataMode.Unknown
     
     fileprivate var _id: String = ""
@@ -109,16 +109,16 @@ class MyCoreDataOperation {
     }
     
     // MARK: - Private funcs
-    private func getContext() -> NSManagedObjectContext {
-        var context: NSManagedObjectContext!
+    private func getContext() -> NSManagedObjectContext? {
+        var context: NSManagedObjectContext?
         MyCoreDataManager.shared.execute({ [weak self] in
             guard let `self` = self else {return}
             switch self.mode {
             case .Background:
                 context = MyCoreDataStack.shared.backgroundManagedObjectContext(true)
                 
-            case .BackgroundScoped:
-                context = MyCoreDataStack.shared.backgroundManagedObjectContext(false)
+//            case .BackgroundScoped:
+//                context = MyCoreDataStack.shared.backgroundManagedObjectContext(false)
                 
             default:
                 context = MyCoreDataStack.shared.managedObjectContext()
@@ -183,6 +183,16 @@ class MyCoreDataOperation {
         })
     }
     
+    class func cleanup() {
+        let operation = MyCoreDataOperation()
+        MyCoreDataManager.shared.cacheOperation(operation)
+        MyCoreDataManager.shared.cleanup({
+            MyCoreDataStack.shared.unload()
+            MyCoreDataManager.shared.loadPersistentSuccess = false
+            MyCoreDataManager.shared.removeOperation(operation)
+        })
+    }
+    
     func shouldRequestAsynchronously(_ asyncRequest: Bool) -> MyCoreDataOperation {
         shouldRequestAsynchronously = asyncRequest
         return self
@@ -237,11 +247,14 @@ class MyCoreDataOperation {
         return obj
     }
     
-    func createObject<T: NSManagedObject>(_ entityClass: T.Type) -> T {
-        return T(context: context)
+    func createObject<T: NSManagedObject>(_ entityClass: T.Type) -> T? {
+        if let _ = context {
+            return T(context: context!)
+        }
+        return nil
     }
     
-    func createObjectIfNeeded<T: NSManagedObject>(_ object: T?) -> T {
+    func createObjectIfNeeded<T: NSManagedObject>(_ object: T?) -> T? {
         if let obj = object {
             return convertObject(obj)
         }
@@ -250,6 +263,8 @@ class MyCoreDataOperation {
     
     // MARK: Save
     func executeSave(_ completion: ((MyCoreDataOperation, MyCoreDataError?) -> Void)?) {
+        guard let _ = context else {return}
+        
         // cache this operation
         MyCoreDataManager.shared.cacheOperation(self)
         
@@ -263,14 +278,14 @@ class MyCoreDataOperation {
         MyCoreDataManager.shared.execute({ [weak self] in
             guard let `self` = self else {return}
             
-            self.context.performAndWait { [weak self] in
+            self.context!.performAndWait { [weak self] in
                 guard let `self` = self else {return}
                 
                 self.operating?(self)
                 
-                guard self.context.hasChanges else {return}
+                guard self.context!.hasChanges else {return}
                 do {
-                    try self.context.save()
+                    try self.context!.save()
                 }
                 catch {
                     print("Coredata - Failed to save - error: \(error)")
@@ -299,6 +314,8 @@ class MyCoreDataOperation {
     
     // MARK: Fetch
     func executeFetch<T: NSManagedObject>(_ entityClass: T.Type, completion: ((MyCoreDataOperation, [T]?) -> Void)?) {
+        guard let _ = context else {return}
+        
         // cache this operation
         MyCoreDataManager.shared.cacheOperation(self)
         
@@ -314,13 +331,13 @@ class MyCoreDataOperation {
             
             let semaphore = DispatchSemaphore(value: 0)
             
-            self.context.perform { [weak self] in
+            self.context!.perform { [weak self] in
                 guard let `self` = self else {return}
                 
                 self.operating?(self)
                 
                 do {
-                    try self.context.execute(NSAsynchronousFetchRequest.init(fetchRequest: self.getFetchRequest(entityClass)) { (fetchResult) in
+                    try self.context!.execute(NSAsynchronousFetchRequest.init(fetchRequest: self.getFetchRequest(entityClass)) { (fetchResult) in
                         result = fetchResult.finalResult as? [T]
                         semaphore.signal()
                     })
@@ -351,6 +368,8 @@ class MyCoreDataOperation {
     
     // MARK: Batch Update
     func executeBatchUpdate<T: NSManagedObject>(_ propertiesToUpdate: [AnyHashable: Any]?, entityClass: T.Type, completion: ((MyCoreDataOperation, MyCoreDataError?) -> Void)?) {
+        guard let _ = context else {return}
+        
         // cache this operation
         MyCoreDataManager.shared.cacheOperation(self)
         
@@ -367,15 +386,15 @@ class MyCoreDataOperation {
             // prepare attributes
             self.propertiesToUpdate = propertiesToUpdate
             
-            self.context.performAndWait { [weak self] in
+            self.context!.performAndWait { [weak self] in
                 guard let `self` = self else {return}
                 
                 self.operating?(self)
                 
                 do {
-                    let result = try self.context.execute(self.getBatchUpdateRequest(entityClass)) as? NSBatchUpdateResult
+                    let result = try self.context!.execute(self.getBatchUpdateRequest(entityClass)) as? NSBatchUpdateResult
                     print("CoreData - Did batch update: \(String(describing: result))")
-                    MyCoreDataStack.shared.mergeChanges(result?.result as? [NSManagedObjectID], context: self.context)
+                    MyCoreDataStack.shared.mergeChanges(result?.result as? [NSManagedObjectID], context: self.context!)
                 }
                 catch {
                     print("Failed to batch update \(String(describing: T.self)) - error: \(error)")
@@ -403,7 +422,9 @@ class MyCoreDataOperation {
     
     // MARK: Delete
     func executeDelete(_ object: NSManagedObject, save: Bool = false, completion: ((MyCoreDataOperation, MyCoreDataError?) -> Void)? = nil) {
-        context.delete(object)
+        guard let _ = context else {return}
+        
+        context!.delete(object)
         if save {
             executeSave({ (operation, error) in
                 var myError = error
@@ -420,6 +441,8 @@ class MyCoreDataOperation {
     
     // MARK: Batch Delete
     func executeBatchDelete<T: NSManagedObject>(_ entityClass: T.Type, completion: ((MyCoreDataOperation, MyCoreDataError?) -> Void)?) {
+        guard let _ = context else {return}
+        
         // cache this operation
         MyCoreDataManager.shared.cacheOperation(self)
         
@@ -433,15 +456,15 @@ class MyCoreDataOperation {
         MyCoreDataManager.shared.execute({ [weak self] in
             guard let `self` = self else {return}
             
-            self.context.performAndWait { [weak self] in
+            self.context!.performAndWait { [weak self] in
                 guard let `self` = self else {return}
                 
                 self.operating?(self)
                 
                 do {
-                    let result = try self.context.execute(self.getBatchDeleteRequest(entityClass)) as? NSBatchDeleteResult
+                    let result = try self.context!.execute(self.getBatchDeleteRequest(entityClass)) as? NSBatchDeleteResult
                     print("CoreData - Did batch delete: \(String(describing: result))")
-                    MyCoreDataStack.shared.mergeChanges(result?.result as? [NSManagedObjectID], context: self.context)
+                    MyCoreDataStack.shared.mergeChanges(result?.result as? [NSManagedObjectID], context: self.context!)
                 }
                 catch {
                     print("Failed to batch delete \(String(describing: T.self)) - error: \(error)")
@@ -474,11 +497,23 @@ class MyCoreDataOperation {
 
 fileprivate class MyCoreDataManager {
     static let shared = MyCoreDataManager()
-    var loadPersistentSuccess = false // TODO: use it
+    var loadPersistentSuccess = false
     var operations = [String: MyCoreDataOperation]()
     let operationQueue = DispatchQueue.init(label: "com.mycoredata.operation")
     let executionQueue = DispatchQueue.init(label: "com.mycoredata.execution", attributes: .concurrent)
     let completionQueue = DispatchQueue.init(label: "com.mycoredata.completion", attributes: .concurrent)
+    
+    func startup(_ starting: (() -> Void)?) {
+        executionQueue.async(flags: .barrier) {
+            starting?()
+        }
+    }
+    
+    func cleanup(_ cleaning: (() -> Void)?) {
+        executionQueue.async(flags: .barrier) {
+            cleaning?()
+        }
+    }
     
     func cacheOperation(_ operation: MyCoreDataOperation) {
         operationQueue.sync { [weak self] in
@@ -500,12 +535,6 @@ fileprivate class MyCoreDataManager {
             print("Coredata ERROR => Failed to load Model")
         }
         return loadPersistentSuccess
-    }
-    
-    func startup(_ starting: (() -> Void)?) {
-        executionQueue.async(flags: .barrier) {
-            starting?()
-        }
     }
     
     func execute(_ executing: (() -> Void)?, asynchronously: Bool = true) {
@@ -541,41 +570,35 @@ fileprivate class MyCoreDataManager {
 
 fileprivate class MyCoreDataStack {
     
-    static let shared: MyCoreDataStack = {
-        let stack = MyCoreDataStack()
-        
-//        NotificationCenter.default.addObserver(stack, selector: #selector(MyCoreDataStack.contextChange(_:)), name:NSNotification.Name.NSManagedObjectContextDidSave , object: nil)
-//        NotificationCenter.default.addObserver(stack, selector: #selector(MyCoreDataStack.contextChange(_:)), name:NSNotification.Name.NSManagedObjectContextObjectsDidChange , object: nil)
-        
-        return stack
-    }()
-    
-//    @objc func contextChange(_ notification: Notification) {
-//        print("CoreData - contextChange: \(notification)")
-//    }
+    static let shared = MyCoreDataStack()
     
     // MARK: - Core Data stack
     private var persistentContainer: NSPersistentContainer!
-    
-    lazy private var backgroundContext: NSManagedObjectContext = {
-        let context = persistentContainer.newBackgroundContext()
-        applyContextAttributes(context)
-        return context
-    }()
+    private var backgroundContext: NSManagedObjectContext!
     
     lazy private var contexts: NSHashTable<NSManagedObjectContext> = {
-        let _contexts = NSHashTable<NSManagedObjectContext>(options: NSPointerFunctions.Options.weakMemory)
-        _contexts.add(persistentContainer.viewContext)
-        _contexts.add(backgroundContext)
-        return _contexts
+        return NSHashTable<NSManagedObjectContext>(options: NSPointerFunctions.Options.weakMemory)
     }()
+    
+    func unload() {
+        persistentContainer = nil
+        backgroundContext = nil
+    }
     
     func loadPersistentContainer(_ configuration: MyCoreDataOperationConfiguration, completion: ((MyCoreDataError?) -> Void)?) {
         initializePersistentContainer(configuration) { [weak self] (error) in
             guard let `self` = self else {return}
-            self.applyContextAttributes(self.persistentContainer.viewContext)
+            self.didInitializeContainer(error)
             completion?(error)
         }
+    }
+    
+    private var privatePersistentContainer: NSPersistentContainer!
+    private func createPersistentContainerIfNeeded(_ model: String) -> NSPersistentContainer {
+        if privatePersistentContainer == nil {
+            privatePersistentContainer = NSPersistentContainer(name: model)
+        }
+        return privatePersistentContainer
     }
     
     private func initializePersistentContainer(_ configuration: MyCoreDataOperationConfiguration, completion: ((MyCoreDataError?) -> Void)?) {
@@ -628,9 +651,23 @@ fileprivate class MyCoreDataStack {
         })
     }
     
-    private func applyContextAttributes(_ context: NSManagedObjectContext) {
+    private func didInitializeContainer(_ error: MyCoreDataError?) {
+        guard error == nil else {return}
+        
+        contexts.removeAllObjects()
+        
+        backgroundContext = persistentContainer.newBackgroundContext()
+        
+        applyContextAttributes(managedObjectContext())
+        applyContextAttributes(backgroundContext)
+    }
+    
+    private func applyContextAttributes(_ context: NSManagedObjectContext, keepContext: Bool = true) {
         context.automaticallyMergesChangesFromParent = true
         context.mergePolicy = NSMergePolicy.mergeByPropertyStoreTrump
+        if keepContext {
+            contexts.add(context)
+        }
     }
     
     func applicationDocumentsDirectory(_ groupName: String = "") -> URL? {
@@ -651,7 +688,6 @@ fileprivate class MyCoreDataStack {
         else {
             let newContext = persistentContainer.newBackgroundContext()
             applyContextAttributes(newContext)
-            contexts.add(newContext)
             return newContext
         }
     }

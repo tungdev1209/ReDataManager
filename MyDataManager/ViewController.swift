@@ -26,8 +26,8 @@ class ViewController: UIViewController {
 
 extension ViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard let vc = storyboard?.instantiateViewController(withIdentifier: String(describing: CategoryViewController.self)) else {return}
-        vc.title = cells[indexPath.row]
+        guard let vc = storyboard?.instantiateViewController(withIdentifier: String(describing: CategoryViewController.self)) as? CategoryViewController else {return}
+        vc.catTitle = cells[indexPath.row]
         MyCoreDataOperation
             .startup(MyCoreDataOperationConfiguration(Bundle.main.getAppName()).modelPath("category/\(cells[indexPath.row])"))
             { [weak self] (error) in
