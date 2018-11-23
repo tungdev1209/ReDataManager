@@ -2,7 +2,7 @@
 //  Category+CoreDataProperties.swift
 //  MyDataManager
 //
-//  Created by Tung Nguyen on 11/18/18.
+//  Created by Tung Nguyen on 11/23/18.
 //  Copyright © 2018 Tung Nguyen. All rights reserved.
 //
 //
@@ -18,6 +18,7 @@ extension Category {
     }
 
     @NSManaged public var title: String?
+    @NSManaged public var subTitle: String?
     @NSManaged public var movies: NSSet?
 
 }

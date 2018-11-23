@@ -37,6 +37,10 @@
 		18AE456221A1C2B40036199C /* Category+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE455A21A1C2B40036199C /* Category+CoreDataClass.swift */; };
 		18B256F421A5C31F00E9DB1B /* ObservableObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B256F321A5C31F00E9DB1B /* ObservableObject.swift */; };
 		18B256F521A5C31F00E9DB1B /* ObservableObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B256F321A5C31F00E9DB1B /* ObservableObject.swift */; };
+		18B256FC21A716E200E9DB1B /* CategoryTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B256FB21A716E200E9DB1B /* CategoryTableViewCell.swift */; };
+		18B256FD21A716E200E9DB1B /* CategoryTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B256FB21A716E200E9DB1B /* CategoryTableViewCell.swift */; };
+		18B256FF21A7186000E9DB1B /* CategoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B256FE21A7186000E9DB1B /* CategoryViewController.swift */; };
+		18B2570021A7186000E9DB1B /* CategoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B256FE21A7186000E9DB1B /* CategoryViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -82,6 +86,8 @@
 		18AE455921A1C2B40036199C /* Movie+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Movie+CoreDataClass.swift"; sourceTree = "<group>"; };
 		18AE455A21A1C2B40036199C /* Category+CoreDataClass.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Category+CoreDataClass.swift"; sourceTree = "<group>"; };
 		18B256F321A5C31F00E9DB1B /* ObservableObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ObservableObject.swift; sourceTree = "<group>"; };
+		18B256FB21A716E200E9DB1B /* CategoryTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryTableViewCell.swift; sourceTree = "<group>"; };
+		18B256FE21A7186000E9DB1B /* CategoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -139,6 +145,8 @@
 				18AE453521A151630036199C /* View */,
 				18AE44F421A151300036199C /* AppDelegate.swift */,
 				18AE44F621A151300036199C /* ViewController.swift */,
+				18B256FE21A7186000E9DB1B /* CategoryViewController.swift */,
+				18B256FB21A716E200E9DB1B /* CategoryTableViewCell.swift */,
 				18AE44F821A151300036199C /* Main.storyboard */,
 				18AE44FB21A151330036199C /* Assets.xcassets */,
 				18AE44FD21A151330036199C /* LaunchScreen.storyboard */,
@@ -369,7 +377,9 @@
 				18AE455D21A1C2B40036199C /* Movie+CoreDataProperties.swift in Sources */,
 				18AE453E21A170350036199C /* MyDataManager.xcdatamodeld in Sources */,
 				18B256F421A5C31F00E9DB1B /* ObservableObject.swift in Sources */,
+				18B256FF21A7186000E9DB1B /* CategoryViewController.swift in Sources */,
 				18AE453821A151630036199C /* MyCoreDataOperation.swift in Sources */,
+				18B256FC21A716E200E9DB1B /* CategoryTableViewCell.swift in Sources */,
 				18AE455F21A1C2B40036199C /* Movie+CoreDataClass.swift in Sources */,
 				18AE453721A151630036199C /* AppCommonExt.swift in Sources */,
 			);
@@ -389,7 +399,9 @@
 				18AE455E21A1C2B40036199C /* Movie+CoreDataProperties.swift in Sources */,
 				18AE454721A1863B0036199C /* MyAlert.swift in Sources */,
 				18B256F521A5C31F00E9DB1B /* ObservableObject.swift in Sources */,
+				18B2570021A7186000E9DB1B /* CategoryViewController.swift in Sources */,
 				18AE454821A1BA5B0036199C /* MyCoreDataOperation.swift in Sources */,
+				18B256FD21A716E200E9DB1B /* CategoryTableViewCell.swift in Sources */,
 				18AE456021A1C2B40036199C /* Movie+CoreDataClass.swift in Sources */,
 				18AE454321A1862B0036199C /* MyRequestOperation.swift in Sources */,
 			);

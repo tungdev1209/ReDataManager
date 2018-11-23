@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="14460.32" systemVersion="18B75" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Category" representedClassName="Category" syncable="YES">
+        <attribute name="subTitle" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="title" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="movies" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Movie" inverseName="category" inverseEntity="Movie" syncable="YES"/>
     </entity>
@@ -11,7 +12,7 @@
         <relationship name="category" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Category" inverseName="movies" inverseEntity="Category" syncable="YES"/>
     </entity>
     <elements>
-        <element name="Category" positionX="-54" positionY="9" width="128" height="75"/>
+        <element name="Category" positionX="-54" positionY="9" width="128" height="90"/>
         <element name="Movie" positionX="-36" positionY="18" width="128" height="105"/>
     </elements>
 </model>
