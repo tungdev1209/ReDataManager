@@ -100,7 +100,7 @@ class MyCoreDataOperation {
     private(set) var context: NSManagedObjectContext?
     private(set) var mode = MyCoreDataMode.Unknown
     
-    fileprivate var _id: String = NSUUID.createBaseTime()
+    fileprivate let _id = NSUUID.createBaseTime()
     
     convenience init(_ contextMode: MyCoreDataMode) {
         self.init()

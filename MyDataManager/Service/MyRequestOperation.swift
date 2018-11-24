@@ -29,7 +29,7 @@ class MyRequestOperation {
     private var synchronousRequestSemaphore: DispatchSemaphore?
     private var responseData: Data?
     
-    fileprivate var _id = ""
+    fileprivate let _id = NSUUID.createBaseTime()
     typealias MyRequestCompletion = ((Data?, [Error]?, MyRequestOperation) -> Void)
     
     convenience init(_ url: String) {
@@ -299,7 +299,6 @@ fileprivate class MyRequestManager {
     func cacheOperation(_ operation: MyRequestOperation) {
         operationQueue.sync { [weak self] in
             guard let `self` = self else {return}
-            operation._id = NSUUID.createBaseTime()
             self.operations[operation._id] = operation
         }
     }
