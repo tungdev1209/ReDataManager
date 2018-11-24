@@ -276,6 +276,7 @@ class MyCoreDataOperation {
         var myError: MyCoreDataError?
         
         MyCoreDataManager.shared.execute({ [weak self] in
+            print(MyCoreDataManager.shared.operations)
             guard let `self` = self else {return}
             
             self.context?.performAndWait { [weak self] in
@@ -298,8 +299,8 @@ class MyCoreDataOperation {
             if self.shouldRequestAsynchronously {
                 self.finalCompletion { [weak self] in
                     guard let `self` = self else {return}
-                    completion?(self, myError)
                     MyCoreDataManager.shared.removeOperation(self)
+                    completion?(self, myError)
                 }
             }
         }, flags: .barrier)
@@ -308,8 +309,8 @@ class MyCoreDataOperation {
         
         // for sync request
         if !shouldRequestAsynchronously {
-            completion?(self, myError)
             MyCoreDataManager.shared.removeOperation(self)
+            completion?(self, myError)
         }
     }
     
@@ -359,8 +360,8 @@ class MyCoreDataOperation {
             if self.shouldRequestAsynchronously {
                 self.finalCompletion { [weak self] in
                     guard let `self` = self else {return}
-                    completion?(self, result)
                     MyCoreDataManager.shared.removeOperation(self)
+                    completion?(self, result)
                 }
             }
         })
@@ -368,8 +369,8 @@ class MyCoreDataOperation {
         // for sync request
         requestSemaphore?.wait()
         if !shouldRequestAsynchronously {
-            completion?(self, result)
             MyCoreDataManager.shared.removeOperation(self)
+            completion?(self, result)
         }
     }
     
@@ -414,8 +415,8 @@ class MyCoreDataOperation {
             if self.shouldRequestAsynchronously {
                 self.finalCompletion { [weak self] in
                     guard let `self` = self else {return}
-                    completion?(self, myError)
                     MyCoreDataManager.shared.removeOperation(self)
+                    completion?(self, myError)
                 }
             }
         }, flags: .barrier)
@@ -423,8 +424,8 @@ class MyCoreDataOperation {
         // for sync request
         requestSemaphore?.wait()
         if !shouldRequestAsynchronously {
-            completion?(self, myError)
             MyCoreDataManager.shared.removeOperation(self)
+            completion?(self, myError)
         }
     }
     
@@ -485,8 +486,8 @@ class MyCoreDataOperation {
             if self.shouldRequestAsynchronously {
                 self.finalCompletion { [weak self] in
                     guard let `self` = self else {return}
-                    completion?(self, myError)
                     MyCoreDataManager.shared.removeOperation(self)
+                    completion?(self, myError)
                 }
             }
             }, flags: .barrier)
@@ -494,8 +495,8 @@ class MyCoreDataOperation {
         // for sync request
         requestSemaphore?.wait()
         if !shouldRequestAsynchronously {
-            completion?(self, myError)
             MyCoreDataManager.shared.removeOperation(self)
+            completion?(self, myError)
         }
     }
     
