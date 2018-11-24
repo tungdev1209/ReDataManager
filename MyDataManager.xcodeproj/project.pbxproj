@@ -139,7 +139,6 @@
 		18AE44F321A151300036199C /* MyDataManager */ = {
 			isa = PBXGroup;
 			children = (
-				18B2570421A9515900E9DB1B /* MyDataManager.entitlements */,
 				18AE455521A1C2B40036199C /* Model */,
 				18B256F221A5C31F00E9DB1B /* ObservableObject */,
 				18AE452F21A151630036199C /* Extension */,
@@ -153,6 +152,7 @@
 				18AE44FB21A151330036199C /* Assets.xcassets */,
 				18AE44FD21A151330036199C /* LaunchScreen.storyboard */,
 				18AE450021A151330036199C /* Info.plist */,
+				18B2570421A9515900E9DB1B /* MyDataManager.entitlements */,
 				18AE453C21A170350036199C /* MyDataManager.xcdatamodeld */,
 			);
 			path = MyDataManager;
@@ -581,6 +581,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 4888JD4VZ9;
 				INFOPLIST_FILE = MyDataManager/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -600,6 +601,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 4888JD4VZ9;
 				INFOPLIST_FILE = MyDataManager/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

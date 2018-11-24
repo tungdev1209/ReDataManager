@@ -11,6 +11,7 @@ import UIKit
 // https://qualitycoding.org/tdd-sample-archives/
 // https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/testing_with_xcode/chapters/08-automation.html#//apple_ref/doc/uid/TP40014132-CH7-SW1
 // https://www.apriorit.com/dev-blog/436-data-encryption-ios
+// openssl enc -aes-256-cbc -k password -P -md sha1
 
 class ViewController: UIViewController {
 
@@ -31,8 +32,7 @@ extension ViewController: UITableViewDelegate {
         MyCoreDataOperation
             .startup(MyCoreDataOperationConfiguration(Bundle.main.getAppName())
                 .modelPath("category/\(cells[indexPath.row])")
-                .protection(true)
-                .protectionAES128Key((key: keyBytes, iv: ivBytes)))
+                .protection(true))
             { [weak self] (error) in
                 guard let `self` = self else {return}
                 print("Did startup - \(error == nil)")

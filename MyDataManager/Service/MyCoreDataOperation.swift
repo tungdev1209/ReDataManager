@@ -63,9 +63,14 @@ class MyCoreDataOperationConfiguration {
     var storeType = MyCoreDataStoreType.SQLite
     var shouldLoadStoreAsynchronously = true
     var protection = false
-    var protectionAES128Key: (key: [UInt8], iv: [UInt8]) =
-        (key: [0xC8, 0xE7, 0xBF, 0x69, 0x0A, 0xA9, 0xDD, 0x55, 0x74, 0xD8, 0x99, 0x46, 0xA7, 0xD7, 0xC5, 0x08],
-         iv: [0x3C, 0x8D, 0x5F, 0xB6, 0x5E, 0x8A, 0x6A, 0xF4, 0x69, 0x8C, 0x3A, 0xC7, 0x78, 0x96, 0xCD, 0xF9])
+    var protectionAESKey: (key: [UInt8], iv: [UInt8]) =
+        (key: [0x70, 0x65, 0xD1, 0x2C, 0xBB, 0xB3, 0xAE, 0x89, 0x84, 0x9B, 0x00, 0x6F, 0xE0, 0x12, 0x5A, 0xA0, 0x83, 0x10, 0x83, 0x1D, 0x05, 0xE2, 0xB0, 0xE6, 0x5C, 0x5C, 0x5C, 0xC9, 0xC7, 0x05, 0x55, 0xE1],
+         iv: [0x08, 0x10, 0x53, 0xCC, 0x78, 0xCC, 0x6D, 0x31, 0xAF, 0x83, 0xAD, 0x6F, 0x23, 0xB9, 0x36, 0x1A])
+    
+    // pass: FDR#e-Tr@_n-B-]k?}i6-y{GSeRr6Tf
+    // salt=6CCBF501E3B03835
+    // key=7065D12CBBB3AE89849B006FE0125AA08310831D05E2B0E65C5C5CC9C70555E1
+    // iv =081053CC78CC6D31AF83AD6F23B9361A
     
     convenience init(_ modelName: String) {
         self.init()
@@ -98,7 +103,7 @@ class MyCoreDataOperationConfiguration {
     }
     
     func protectionAES128Key(_ key: (key: [UInt8], iv: [UInt8])) -> MyCoreDataOperationConfiguration {
-        protectionAES128Key = key
+        protectionAESKey = key
         return self
     }
 }
@@ -648,13 +653,13 @@ fileprivate class MyCoreDataStack {
             let storeEncPath = appModelPathURL.appendingPathComponent(configuration.modelName + "_enc.sqlite")
             let storeDecPath = appModelPathURL.appendingPathComponent(configuration.modelName + ".sqlite")
             if FileManager.default.fileExists(atPath: storeEncPath.path),
-                !FileManager.default.decryptAES128FileAt(storeEncPath.path, newPath: storeDecPath.path, key: keyBytes, iv: ivBytes) {
+                !FileManager.default.decryptAESFileAt(storeEncPath.path, newPath: storeDecPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
                 completion?(MyCoreDataError.ProtectStoreFail)
                 return
             }
             protectStoreBlock = {
                 if FileManager.default.fileExists(atPath: storeDecPath.path),
-                    !FileManager.default.encryptAES128FileAt(storeDecPath.path, newPath: storeEncPath.path, key: configuration.protectionAES128Key.key, iv: configuration.protectionAES128Key.iv) {
+                    !FileManager.default.encryptAESFileAt(storeDecPath.path, newPath: storeEncPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
                     print("Could not Encrypt store, might be leak sensitive information")
                 }
             }

@@ -188,9 +188,9 @@ extension FileManager {
         return existing
     }
     
-    func encryptAES128FileAt(_ path: String, newPath: String, key: [UInt8], iv: [UInt8]) -> Bool {
+    func encryptAESFileAt(_ path: String, newPath: String, key: [UInt8], iv: [UInt8]) -> Bool {
         guard let file = contents(atPath: path),
-            let encData = file.encryptAES128(key, iv: iv) else {return false}
+            let encData = file.encryptAES(key, iv: iv) else {return false}
         var success = false
         do {
             try removeItem(at: URL(fileURLWithPath: path))
@@ -202,9 +202,9 @@ extension FileManager {
         return success
     }
     
-    func decryptAES128FileAt(_ path: String, newPath: String, key: [UInt8], iv: [UInt8]) -> Bool {
+    func decryptAESFileAt(_ path: String, newPath: String, key: [UInt8], iv: [UInt8]) -> Bool {
         guard let file = contents(atPath: path),
-            let decData = file.decryptAES128(key, iv: iv) else {return false}
+            let decData = file.decryptAES(key, iv: iv) else {return false}
         var success = false
         do {
             try removeItem(at: URL(fileURLWithPath: path))
@@ -248,49 +248,29 @@ extension Data {
         }
     }
     
-    func encryptAES128(_ key: [UInt8], iv: [UInt8]) -> Data? {
-        return encryptAES128(Data.init(bytes: key), iv: Data.init(bytes: iv))
+    func encryptAES(_ key: [UInt8], iv: [UInt8]) -> Data? {
+        let keyData = Data.init(bytes: key)
+        if keyData.count == 16 {
+            return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCEncrypt, size: kCCKeySizeAES128)
+        }
+        if keyData.count == 32 {
+            return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCEncrypt, size: kCCKeySizeAES256)
+        }
+        return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCEncrypt, size: kCCKeySizeAES192)
     }
     
-    func encryptAES128(_ key: Data, iv: Data) -> Data? {
-        let data = self as NSData
-        let ivData = iv as NSData
-        let keyData = key as NSData
-        
-        let encryptLength = size_t(data.length + kCCBlockSizeAES128)
-        var encryptData = Data(count: encryptLength)
-        
-        let keyLength = size_t(kCCKeySizeAES128)
-        let options = CCOptions(kCCOptionPKCS7Padding)
-        
-        var numBytesEncrypted: size_t = 0
-        
-        let encryptStatus = encryptData.withUnsafeMutableBytes { encryptBytes in
-            CCCrypt(CCOperation(kCCEncrypt),
-                    CCAlgorithm(kCCAlgorithmAES),
-                    options,
-                    keyData.bytes, keyLength,
-                    ivData.bytes,
-                    data.bytes, data.length,
-                    encryptBytes, encryptLength,
-                    &numBytesEncrypted)
+    func decryptAES(_ key: [UInt8], iv: [UInt8]) -> Data? {
+        let keyData = Data.init(bytes: key)
+        if keyData.count == 16 {
+            return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCDecrypt, size: kCCKeySizeAES128)
         }
-        
-        if UInt32(encryptStatus) == UInt32(kCCSuccess) {
-            encryptData.removeSubrange(numBytesEncrypted..<encryptData.count)
+        if keyData.count == 32 {
+            return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCDecrypt, size: kCCKeySizeAES256)
         }
-        else {
-            print("Failed to encrypt - error: \(encryptStatus)")
-        }
-        
-        return encryptData
+        return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCDecrypt, size: kCCKeySizeAES192)
     }
     
-    func decryptAES128(_ key: [UInt8], iv: [UInt8]) -> Data? {
-        return decryptAES128(Data.init(bytes: key), iv: Data.init(bytes: iv))
-    }
-    
-    func decryptAES128(_ key: Data, iv: Data) -> Data? {
+    func cryptAES(_ key: Data, iv: Data, operation: Int, size: Int) -> Data? {
         let data = self as NSData
         let ivData = iv as NSData
         let keyData = key as NSData
@@ -298,16 +278,13 @@ extension Data {
         let decryptLength = size_t(data.length + kCCBlockSizeAES128)
         var decryptData = Data(count: decryptLength)
         
-        let keyLength = size_t(kCCKeySizeAES128)
-        let options = CCOptions(kCCOptionPKCS7Padding)
-        
         var numBytesEncrypted: size_t = 0
         
         let decryptStatus = decryptData.withUnsafeMutableBytes { decryptBytes in
-            CCCrypt(CCOperation(kCCDecrypt),
+            CCCrypt(CCOperation(operation), //kCCDecrypt
                     CCAlgorithm(kCCAlgorithmAES),
-                    options,
-                    keyData.bytes, keyLength,
+                    CCOptions(kCCOptionPKCS7Padding),
+                    keyData.bytes, size_t(size), //kCCKeySizeAES128
                     ivData.bytes,
                     data.bytes, data.length,
                     decryptBytes, decryptLength,
@@ -414,7 +391,3 @@ extension UIView {
         return image
     }
 }
-
-// Constant
-let ivBytes: [UInt8] = [0xC8, 0xE7, 0xBF, 0x69, 0x0A, 0xA9, 0xDD, 0x55, 0x74, 0xD8, 0x99, 0x46, 0xA7, 0xD7, 0xC5, 0x08]
-let keyBytes: [UInt8] = [0x3C, 0x8D, 0x5F, 0xB6, 0x5E, 0x8A, 0x6A, 0xF4, 0x69, 0x8C, 0x3A, 0xC7, 0x78, 0x96, 0xCD, 0xF9]
