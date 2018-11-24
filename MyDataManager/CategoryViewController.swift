@@ -38,17 +38,19 @@ class CategoryViewController: UIViewController {
     }
     
     @IBAction func btnSavePressed(_ sender: Any) {
-        MyCoreDataOperation(.Background)
+        MyCoreDataOperation(.BackgroundScoped)
             .predicate(NSPredicate(format: "%K == %@", #keyPath(Category.title), catTitle))
             .executeFetch(Category.self, completion: { [weak self] (operation, cats) in
                 guard let `self` = self else {return}
                 guard let cat = operation.createObjectIfNeeded(cats?.first) else {return}
-                DispatchQueue.main.sync {
+                DispatchQueue.main.sync { [weak self] in
+                    guard let `self` = self else {return}
                     cat.subTitle = self.titleTf.text
                 }
                 cat.title = self.catTitle
                 operation.delegateQueue(DispatchQueue.main)
-                    .executeSave({ (_, error) in
+                    .executeSave({ [weak self] (_, error) in
+                        guard let `self` = self else {return}
                         print("Did save - \(String(describing: error))")
                         if error == nil {
                             self.title = self.titleTf.text
