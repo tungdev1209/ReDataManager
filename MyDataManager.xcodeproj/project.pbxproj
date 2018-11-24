@@ -88,6 +88,7 @@
 		18B256F321A5C31F00E9DB1B /* ObservableObject.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ObservableObject.swift; sourceTree = "<group>"; };
 		18B256FB21A716E200E9DB1B /* CategoryTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryTableViewCell.swift; sourceTree = "<group>"; };
 		18B256FE21A7186000E9DB1B /* CategoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryViewController.swift; sourceTree = "<group>"; };
+		18B2570421A9515900E9DB1B /* MyDataManager.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MyDataManager.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,6 +139,7 @@
 		18AE44F321A151300036199C /* MyDataManager */ = {
 			isa = PBXGroup;
 			children = (
+				18B2570421A9515900E9DB1B /* MyDataManager.entitlements */,
 				18AE455521A1C2B40036199C /* Model */,
 				18B256F221A5C31F00E9DB1B /* ObservableObject */,
 				18AE452F21A151630036199C /* Extension */,
@@ -304,6 +306,11 @@
 				TargetAttributes = {
 					18AE44F021A151300036199C = {
 						CreatedOnToolsVersion = 10.1;
+						SystemCapabilities = {
+							com.apple.DataProtection = {
+								enabled = 1;
+							};
+						};
 					};
 					18AE450421A151330036199C = {
 						CreatedOnToolsVersion = 10.1;
@@ -570,6 +577,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MyDataManager/MyDataManager.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 4888JD4VZ9;
 				INFOPLIST_FILE = MyDataManager/Info.plist;
@@ -588,6 +596,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MyDataManager/MyDataManager.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 4888JD4VZ9;
 				INFOPLIST_FILE = MyDataManager/Info.plist;

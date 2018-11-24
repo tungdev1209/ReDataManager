@@ -38,7 +38,7 @@ class CategoryViewController: UIViewController {
     }
     
     @IBAction func btnSavePressed(_ sender: Any) {
-        MyCoreDataOperation(.BackgroundScoped)
+        MyCoreDataOperation(.Background)
             .predicate(NSPredicate(format: "%K == %@", #keyPath(Category.title), catTitle))
             .executeFetch(Category.self, completion: { [weak self] (operation, cats) in
                 guard let `self` = self else {return}
