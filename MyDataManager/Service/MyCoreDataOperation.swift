@@ -56,58 +56,6 @@ enum MyCoreDataStoreType {
     }
 }
 
-class MyCoreDataOperationConfiguration {
-    var modelName = ""
-    var modelPath = ""
-    var appsGroupName = ""
-    var storeType = MyCoreDataStoreType.SQLite
-    var shouldLoadStoreAsynchronously = true
-    var protection = false
-    var protectionAESKey: (key: [UInt8], iv: [UInt8]) =
-        (key: [0x70, 0x65, 0xD1, 0x2C, 0xBB, 0xB3, 0xAE, 0x89, 0x84, 0x9B, 0x00, 0x6F, 0xE0, 0x12, 0x5A, 0xA0, 0x83, 0x10, 0x83, 0x1D, 0x05, 0xE2, 0xB0, 0xE6, 0x5C, 0x5C, 0x5C, 0xC9, 0xC7, 0x05, 0x55, 0xE1],
-         iv: [0x08, 0x10, 0x53, 0xCC, 0x78, 0xCC, 0x6D, 0x31, 0xAF, 0x83, 0xAD, 0x6F, 0x23, 0xB9, 0x36, 0x1A])
-    
-    // pass: FDR#e-Tr@_n-B-]k?}i6-y{GSeRr6Tf
-    // salt=6CCBF501E3B03835
-    // key=7065D12CBBB3AE89849B006FE0125AA08310831D05E2B0E65C5C5CC9C70555E1
-    // iv =081053CC78CC6D31AF83AD6F23B9361A
-    
-    convenience init(_ modelName: String) {
-        self.init()
-        self.modelName = modelName
-    }
-    
-    func modelPath(_ mPath: String) -> MyCoreDataOperationConfiguration {
-        modelPath = mPath
-        return self
-    }
-    
-    func appsGroupName(_ agName: String) -> MyCoreDataOperationConfiguration {
-        appsGroupName = agName
-        return self
-    }
-    
-    func storeType(_ type: MyCoreDataStoreType) -> MyCoreDataOperationConfiguration {
-        storeType = type
-        return self
-    }
-    
-    func shouldLoadStoreAsynchronously(_ loadAsync: Bool) -> MyCoreDataOperationConfiguration {
-        shouldLoadStoreAsynchronously = loadAsync
-        return self
-    }
-    
-    func protection(_ pro: Bool) -> MyCoreDataOperationConfiguration {
-        protection = pro
-        return self
-    }
-    
-    func protectionAES128Key(_ key: (key: [UInt8], iv: [UInt8])) -> MyCoreDataOperationConfiguration {
-        protectionAESKey = key
-        return self
-    }
-}
-
 class MyCoreDataOperation {
     var predicate: NSPredicate?
     var sortDescriptors: [NSSortDescriptor]?
@@ -758,5 +706,57 @@ fileprivate class MyCoreDataStack {
     
     func persistentStoreCoordinator() -> NSPersistentStoreCoordinator {
         return persistentContainer.persistentStoreCoordinator
+    }
+}
+
+class MyCoreDataOperationConfiguration {
+    var modelName = ""
+    var modelPath = ""
+    var appsGroupName = ""
+    var storeType = MyCoreDataStoreType.SQLite
+    var shouldLoadStoreAsynchronously = true
+    var protection = false
+    var protectionAESKey: (key: [UInt8], iv: [UInt8]) =
+        (key: [0x70, 0x65, 0xD1, 0x2C, 0xBB, 0xB3, 0xAE, 0x89, 0x84, 0x9B, 0x00, 0x6F, 0xE0, 0x12, 0x5A, 0xA0, 0x83, 0x10, 0x83, 0x1D, 0x05, 0xE2, 0xB0, 0xE6, 0x5C, 0x5C, 0x5C, 0xC9, 0xC7, 0x05, 0x55, 0xE1],
+         iv: [0x08, 0x10, 0x53, 0xCC, 0x78, 0xCC, 0x6D, 0x31, 0xAF, 0x83, 0xAD, 0x6F, 0x23, 0xB9, 0x36, 0x1A])
+    
+    // pass: FDR#e-Tr@_n-B-]k?}i6-y{GSeRr6Tf
+    // salt=6CCBF501E3B03835
+    // key=7065D12CBBB3AE89849B006FE0125AA08310831D05E2B0E65C5C5CC9C70555E1
+    // iv =081053CC78CC6D31AF83AD6F23B9361A
+    
+    convenience init(_ modelName: String) {
+        self.init()
+        self.modelName = modelName
+    }
+    
+    func modelPath(_ mPath: String) -> MyCoreDataOperationConfiguration {
+        modelPath = mPath
+        return self
+    }
+    
+    func appsGroupName(_ agName: String) -> MyCoreDataOperationConfiguration {
+        appsGroupName = agName
+        return self
+    }
+    
+    func storeType(_ type: MyCoreDataStoreType) -> MyCoreDataOperationConfiguration {
+        storeType = type
+        return self
+    }
+    
+    func shouldLoadStoreAsynchronously(_ loadAsync: Bool) -> MyCoreDataOperationConfiguration {
+        shouldLoadStoreAsynchronously = loadAsync
+        return self
+    }
+    
+    func protection(_ pro: Bool) -> MyCoreDataOperationConfiguration {
+        protection = pro
+        return self
+    }
+    
+    func protectionAES128Key(_ key: (key: [UInt8], iv: [UInt8])) -> MyCoreDataOperationConfiguration {
+        protectionAESKey = key
+        return self
     }
 }

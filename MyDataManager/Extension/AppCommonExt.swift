@@ -34,6 +34,10 @@ extension String {
         }
         return false
     }
+    
+    func toData() -> Data? {
+        return data(using: String.Encoding.utf8)
+    }
 }
 
 private var kBackItemSelectedBlock: UInt8 = 0
@@ -190,7 +194,7 @@ extension FileManager {
     
     func encryptAESFileAt(_ path: String, newPath: String, key: [UInt8], iv: [UInt8]) -> Bool {
         guard let file = contents(atPath: path),
-            let encData = file.encryptAES(key, iv: iv) else {return false}
+            let encData = file.toAESencrypted(key, iv: iv) else {return false}
         var success = false
         do {
             try removeItem(at: URL(fileURLWithPath: path))
@@ -204,7 +208,7 @@ extension FileManager {
     
     func decryptAESFileAt(_ path: String, newPath: String, key: [UInt8], iv: [UInt8]) -> Bool {
         guard let file = contents(atPath: path),
-            let decData = file.decryptAES(key, iv: iv) else {return false}
+            let decData = file.toAESdecrypted(key, iv: iv) else {return false}
         var success = false
         do {
             try removeItem(at: URL(fileURLWithPath: path))
@@ -248,29 +252,59 @@ extension Data {
         }
     }
     
-    func encryptAES(_ key: [UInt8], iv: [UInt8]) -> Data? {
-        let keyData = Data.init(bytes: key)
-        if keyData.count == 16 {
-            return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCEncrypt, size: kCCKeySizeAES128)
+    func toAESKey(_ length: Int = kCCKeySizeAES256) -> Data? {
+        var status = Int32(0)
+        var derivedBytes = [UInt8](repeating: 0, count: length)
+        let salt = Data.randomSalt()
+        withUnsafeBytes { (passwordBytes: UnsafePointer<Int8>!) in
+            salt.withUnsafeBytes { (saltBytes: UnsafePointer<UInt8>!) in
+                status = CCKeyDerivationPBKDF(CCPBKDFAlgorithm(kCCPBKDF2),
+                    passwordBytes,
+                    count,
+                    saltBytes,
+                    salt.count,
+                    CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA1),
+                    10000,
+                    &derivedBytes,
+                    length)
+            }
         }
-        if keyData.count == 32 {
-            return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCEncrypt, size: kCCKeySizeAES256)
+        if status == 0 {
+            return Data(bytes: UnsafePointer<UInt8>(derivedBytes), count: length)
         }
-        return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCEncrypt, size: kCCKeySizeAES192)
+        print("Failed to gen key - error: \(status)")
+        return nil
     }
     
-    func decryptAES(_ key: [UInt8], iv: [UInt8]) -> Data? {
-        let keyData = Data.init(bytes: key)
-        if keyData.count == 16 {
-            return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCDecrypt, size: kCCKeySizeAES128)
-        }
-        if keyData.count == 32 {
-            return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCDecrypt, size: kCCKeySizeAES256)
-        }
-        return cryptAES(keyData, iv: Data.init(bytes: iv), operation: kCCDecrypt, size: kCCKeySizeAES192)
+    func toAESencrypted(_ key: [UInt8], iv: [UInt8]) -> Data? {
+        return toAESencrypted(Data.init(bytes: key), iv: Data.init(bytes: iv))
     }
     
-    func cryptAES(_ key: Data, iv: Data, operation: Int, size: Int) -> Data? {
+    func toAESencrypted(_ key: Data, iv: Data) -> Data? {
+        if key.count == 16 {
+            return toAEScrypted(key, iv: iv, operation: kCCEncrypt, size: kCCKeySizeAES128)
+        }
+        if key.count == 32 {
+            return toAEScrypted(key, iv: iv, operation: kCCEncrypt, size: kCCKeySizeAES256)
+        }
+        return toAEScrypted(key, iv: iv, operation: kCCEncrypt, size: kCCKeySizeAES192)
+    }
+    
+    func toAESdecrypted(_ key: [UInt8], iv: [UInt8]) -> Data? {
+        return toAESdecrypted(Data(bytes: key), iv: Data(bytes: iv))
+    }
+    
+    func toAESdecrypted(_ key: Data, iv: Data) -> Data? {
+        if key.count == 16 {
+            return toAEScrypted(key, iv: iv, operation: kCCDecrypt, size: kCCKeySizeAES128)
+        }
+        if key.count == 32 {
+            return toAEScrypted(key, iv: iv, operation: kCCDecrypt, size: kCCKeySizeAES256)
+        }
+        return toAEScrypted(key, iv: iv, operation: kCCDecrypt, size: kCCKeySizeAES192)
+    }
+    
+    func toAEScrypted(_ key: Data, iv: Data, operation: Int, size: Int) -> Data? {
         let data = self as NSData
         let ivData = iv as NSData
         let keyData = key as NSData
@@ -303,6 +337,22 @@ extension Data {
     
     func toUIImage() -> UIImage? {
         return UIImage(data: self)
+    }
+    
+    static func randomIv() -> Data {
+        return random(length: kCCBlockSizeAES128)
+    }
+    
+    static func randomSalt() -> Data {
+        return random(length: 8)
+    }
+    
+    static func random(length: Int) -> Data {
+        var data = Data(count: length)
+        let _ = data.withUnsafeMutableBytes { mutableBytes in
+            SecRandomCopyBytes(kSecRandomDefault, length, mutableBytes)
+        }
+        return data
     }
 }
 

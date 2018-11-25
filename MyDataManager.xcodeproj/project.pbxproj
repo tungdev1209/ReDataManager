@@ -17,12 +17,10 @@
 		18AE453721A151630036199C /* AppCommonExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453021A151630036199C /* AppCommonExt.swift */; };
 		18AE453821A151630036199C /* MyCoreDataOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453221A151630036199C /* MyCoreDataOperation.swift */; };
 		18AE453921A151630036199C /* MyRequestOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453321A151630036199C /* MyRequestOperation.swift */; };
-		18AE453A21A151630036199C /* MyRequestConstant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453421A151630036199C /* MyRequestConstant.swift */; };
 		18AE453B21A151630036199C /* MyAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453621A151630036199C /* MyAlert.swift */; };
 		18AE453E21A170350036199C /* MyDataManager.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453C21A170350036199C /* MyDataManager.xcdatamodeld */; };
 		18AE454121A176C70036199C /* MyCoreDataOperationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE454021A176C70036199C /* MyCoreDataOperationTests.swift */; };
 		18AE454321A1862B0036199C /* MyRequestOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453321A151630036199C /* MyRequestOperation.swift */; };
-		18AE454421A1862B0036199C /* MyRequestConstant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453421A151630036199C /* MyRequestConstant.swift */; };
 		18AE454521A186320036199C /* MyDataManager.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453C21A170350036199C /* MyDataManager.xcdatamodeld */; };
 		18AE454621A186380036199C /* AppCommonExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453021A151630036199C /* AppCommonExt.swift */; };
 		18AE454721A1863B0036199C /* MyAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453621A151630036199C /* MyAlert.swift */; };
@@ -41,6 +39,7 @@
 		18B256FD21A716E200E9DB1B /* CategoryTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B256FB21A716E200E9DB1B /* CategoryTableViewCell.swift */; };
 		18B256FF21A7186000E9DB1B /* CategoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B256FE21A7186000E9DB1B /* CategoryViewController.swift */; };
 		18B2570021A7186000E9DB1B /* CategoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B256FE21A7186000E9DB1B /* CategoryViewController.swift */; };
+		18B2570621AA873B00E9DB1B /* MyKeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B2570521AA873B00E9DB1B /* MyKeychainService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -77,7 +76,6 @@
 		18AE453021A151630036199C /* AppCommonExt.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppCommonExt.swift; sourceTree = "<group>"; };
 		18AE453221A151630036199C /* MyCoreDataOperation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MyCoreDataOperation.swift; sourceTree = "<group>"; };
 		18AE453321A151630036199C /* MyRequestOperation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MyRequestOperation.swift; sourceTree = "<group>"; };
-		18AE453421A151630036199C /* MyRequestConstant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MyRequestConstant.swift; sourceTree = "<group>"; };
 		18AE453621A151630036199C /* MyAlert.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MyAlert.swift; sourceTree = "<group>"; };
 		18AE453D21A170350036199C /* MyDataManager.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = MyDataManager.xcdatamodel; sourceTree = "<group>"; };
 		18AE454021A176C70036199C /* MyCoreDataOperationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyCoreDataOperationTests.swift; sourceTree = "<group>"; };
@@ -89,6 +87,7 @@
 		18B256FB21A716E200E9DB1B /* CategoryTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryTableViewCell.swift; sourceTree = "<group>"; };
 		18B256FE21A7186000E9DB1B /* CategoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryViewController.swift; sourceTree = "<group>"; };
 		18B2570421A9515900E9DB1B /* MyDataManager.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MyDataManager.entitlements; sourceTree = "<group>"; };
+		18B2570521AA873B00E9DB1B /* MyKeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyKeychainService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -190,7 +189,7 @@
 			children = (
 				18AE453221A151630036199C /* MyCoreDataOperation.swift */,
 				18AE453321A151630036199C /* MyRequestOperation.swift */,
-				18AE453421A151630036199C /* MyRequestConstant.swift */,
+				18B2570521AA873B00E9DB1B /* MyKeychainService.swift */,
 			);
 			path = Service;
 			sourceTree = "<group>";
@@ -380,9 +379,9 @@
 				18AE44F721A151300036199C /* ViewController.swift in Sources */,
 				18AE453921A151630036199C /* MyRequestOperation.swift in Sources */,
 				18AE44F521A151300036199C /* AppDelegate.swift in Sources */,
-				18AE453A21A151630036199C /* MyRequestConstant.swift in Sources */,
 				18AE455D21A1C2B40036199C /* Movie+CoreDataProperties.swift in Sources */,
 				18AE453E21A170350036199C /* MyDataManager.xcdatamodeld in Sources */,
+				18B2570621AA873B00E9DB1B /* MyKeychainService.swift in Sources */,
 				18B256F421A5C31F00E9DB1B /* ObservableObject.swift in Sources */,
 				18B256FF21A7186000E9DB1B /* CategoryViewController.swift in Sources */,
 				18AE453821A151630036199C /* MyCoreDataOperation.swift in Sources */,
@@ -399,7 +398,6 @@
 				18AE454121A176C70036199C /* MyCoreDataOperationTests.swift in Sources */,
 				18AE456221A1C2B40036199C /* Category+CoreDataClass.swift in Sources */,
 				18AE455C21A1C2B40036199C /* Category+CoreDataProperties.swift in Sources */,
-				18AE454421A1862B0036199C /* MyRequestConstant.swift in Sources */,
 				18AE454521A186320036199C /* MyDataManager.xcdatamodeld in Sources */,
 				18AE450A21A151330036199C /* MyDataManagerTests.swift in Sources */,
 				18AE454621A186380036199C /* AppCommonExt.swift in Sources */,

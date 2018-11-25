@@ -22,6 +22,8 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         title = "Main"
+        
+        MyKeychainService.shared.configuration = MyKeyChainConfiguration()
     }
 }
 
@@ -52,4 +54,3 @@ extension ViewController: UITableViewDataSource {
         return cells.count
     }
 }
-
