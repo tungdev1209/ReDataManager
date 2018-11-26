@@ -23,6 +23,7 @@ extension String {
     }
     
     func isValidEmail() -> Bool {
+        if isEmpty {return false}
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,4}"
         let pred = NSPredicate(format: "SELF MATCHES %@", emailRegex)
         return pred.evaluate(with: self)
@@ -259,14 +260,14 @@ extension Data {
         withUnsafeBytes { (passwordBytes: UnsafePointer<Int8>!) in
             salt.withUnsafeBytes { (saltBytes: UnsafePointer<UInt8>!) in
                 status = CCKeyDerivationPBKDF(CCPBKDFAlgorithm(kCCPBKDF2),
-                    passwordBytes,
-                    count,
-                    saltBytes,
-                    salt.count,
-                    CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA1),
-                    10000,
-                    &derivedBytes,
-                    length)
+                                              passwordBytes,
+                                              count,
+                                              saltBytes,
+                                              salt.count,
+                                              CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA1),
+                                              10000,
+                                              &derivedBytes,
+                                              length)
             }
         }
         if status == 0 {
@@ -316,13 +317,13 @@ extension Data {
         
         let decryptStatus = decryptData.withUnsafeMutableBytes { decryptBytes in
             CCCrypt(CCOperation(operation), //kCCDecrypt
-                    CCAlgorithm(kCCAlgorithmAES),
-                    CCOptions(kCCOptionPKCS7Padding),
-                    keyData.bytes, size_t(size), //kCCKeySizeAES128
-                    ivData.bytes,
-                    data.bytes, data.length,
-                    decryptBytes, decryptLength,
-                    &numBytesEncrypted)
+                CCAlgorithm(kCCAlgorithmAES),
+                CCOptions(kCCOptionPKCS7Padding),
+                keyData.bytes, size_t(size), //kCCKeySizeAES128
+                ivData.bytes,
+                data.bytes, data.length,
+                decryptBytes, decryptLength,
+                &numBytesEncrypted)
         }
         
         if UInt32(decryptStatus) == UInt32(kCCSuccess) {
@@ -360,6 +361,10 @@ extension Dictionary {
     func toString() -> String {
         guard let profileData = try? JSONSerialization.data(withJSONObject: self, options: JSONSerialization.WritingOptions.prettyPrinted) else {return ""}
         return profileData.toString()
+    }
+    
+    func toData() -> Data? {
+        return try? JSONSerialization.data(withJSONObject: self)
     }
 }
 
@@ -439,5 +444,11 @@ extension UIView {
             }
         }
         return image
+    }
+}
+
+extension UIResponder {
+    var parentViewController: UIViewController? {
+        return (self.next as? UIViewController) ?? self.next?.parentViewController
     }
 }
