@@ -605,7 +605,13 @@ fileprivate class MyCoreDataStack {
                 completion?(MyCoreDataError.ProtectStoreFail)
                 return
             }
-            protectStoreBlock = {
+            protectStoreBlock = { [weak self] in
+                guard let `self` = self else {return}
+                let stores = self.persistentContainer.persistentStoreCoordinator.persistentStores
+                for store in stores {
+                    try? self.persistentContainer.persistentStoreCoordinator.remove(store)
+                }
+                
                 if FileManager.default.fileExists(atPath: storeDecPath.path),
                     !FileManager.default.encryptAESFileAt(storeDecPath.path, newPath: storeEncPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
                     print("Could not Encrypt store, might be leak sensitive information")
@@ -716,14 +722,7 @@ class MyCoreDataOperationConfiguration {
     var storeType = MyCoreDataStoreType.SQLite
     var shouldLoadStoreAsynchronously = true
     var protection = false
-    var protectionAESKey: (key: [UInt8], iv: [UInt8]) =
-        (key: [0x70, 0x65, 0xD1, 0x2C, 0xBB, 0xB3, 0xAE, 0x89, 0x84, 0x9B, 0x00, 0x6F, 0xE0, 0x12, 0x5A, 0xA0, 0x83, 0x10, 0x83, 0x1D, 0x05, 0xE2, 0xB0, 0xE6, 0x5C, 0x5C, 0x5C, 0xC9, 0xC7, 0x05, 0x55, 0xE1],
-         iv: [0x08, 0x10, 0x53, 0xCC, 0x78, 0xCC, 0x6D, 0x31, 0xAF, 0x83, 0xAD, 0x6F, 0x23, 0xB9, 0x36, 0x1A])
-    
-    // pass: FDR#e-Tr@_n-B-]k?}i6-y{GSeRr6Tf
-    // salt=6CCBF501E3B03835
-    // key=7065D12CBBB3AE89849B006FE0125AA08310831D05E2B0E65C5C5CC9C70555E1
-    // iv =081053CC78CC6D31AF83AD6F23B9361A
+    var protectionAESKey: (key: [UInt8], iv: [UInt8]) = (key: [], iv: [])
     
     convenience init(_ modelName: String) {
         self.init()

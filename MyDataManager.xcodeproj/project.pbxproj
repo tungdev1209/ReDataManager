@@ -141,7 +141,7 @@
 				18AE455521A1C2B40036199C /* Model */,
 				18B256F221A5C31F00E9DB1B /* ObservableObject */,
 				18AE452F21A151630036199C /* Extension */,
-				18AE453121A151630036199C /* Service */,
+				18AE453121A151630036199C /* Operation */,
 				18AE453521A151630036199C /* View */,
 				18AE44F421A151300036199C /* AppDelegate.swift */,
 				18AE44F621A151300036199C /* ViewController.swift */,
@@ -184,14 +184,14 @@
 			path = Extension;
 			sourceTree = "<group>";
 		};
-		18AE453121A151630036199C /* Service */ = {
+		18AE453121A151630036199C /* Operation */ = {
 			isa = PBXGroup;
 			children = (
 				18AE453221A151630036199C /* MyCoreDataOperation.swift */,
 				18AE453321A151630036199C /* MyRequestOperation.swift */,
 				18B2570521AA873B00E9DB1B /* MyKeychainService.swift */,
 			);
-			path = Service;
+			path = Operation;
 			sourceTree = "<group>";
 		};
 		18AE453521A151630036199C /* View */ = {
