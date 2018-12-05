@@ -13,6 +13,9 @@ import UIKit
 // https://www.apriorit.com/dev-blog/436-data-encryption-ios
 // openssl enc -aes-256-cbc -k password -P -md sha1
 
+let key: [UInt8] = [0x9F, 0x9C, 0x72, 0x79, 0xF6, 0x8A, 0x1E, 0x38, 0x65, 0x22, 0xE1, 0x16, 0x3A, 0xF0, 0x61, 0x07, 0x0A, 0xD2, 0x7C, 0xCF, 0x93, 0x45, 0x79, 0xB4, 0x9C, 0xA0, 0xED, 0xCC, 0xFE, 0x82, 0xDF, 0xF4]
+let iv: [UInt8] = [0xB7, 0x6A, 0x45, 0x6B, 0x43, 0x2C, 0x00, 0xA1, 0x86, 0x78, 0x8E, 0xB2, 0x35, 0xF6, 0x59, 0x3D]
+
 class ViewController: UIViewController {
 
     @IBOutlet weak var listCategoryTblView: UITableView!
@@ -33,8 +36,10 @@ extension ViewController: UITableViewDelegate {
         vc.catTitle = cells[indexPath.row]
         MyCoreDataOperation
             .startup(MyCoreDataOperationConfiguration(Bundle.main.getAppName())
+                .appsGroupName("group.com.tung.mydatamanager")
                 .modelPath("category/\(cells[indexPath.row])")
-                .protection(true))
+                .protection(true)
+                .protectionAESKey((key: key, iv: iv)))
             { [weak self] (error) in
                 guard let `self` = self else {return}
                 print("Did startup - \(error == nil)")

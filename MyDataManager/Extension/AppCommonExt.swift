@@ -18,6 +18,7 @@ extension String {
     }
     
     func substringNumberCharactersOfEndString(_ number: Int) -> String {
+        if isEmpty {return ""}
         let fromIndex = index(endIndex, offsetBy: (-1)*number)
         return String(self[fromIndex...])
     }
@@ -69,16 +70,16 @@ extension UIBarButtonItem {
         if UIDevice.current.isIpad() {
             width = 40
         }
-        let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: width, height: 44))
+        let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: width, height: 30))
         imageView.image = image
-        imageView.contentMode = .scaleAspectFill
+        imageView.contentMode = .scaleAspectFit
         appendToCustomView(imageView)
         return self
     }
     
     private func appendToCustomView(_ view: UIView) {
         if customView == nil {
-            let itemView = UIStackView(frame: CGRect(x: 0, y: 0, width: 70, height: 44))
+            let itemView = UIStackView(frame: CGRect(x: 0, y: 0, width: 0, height: 44))
             itemView.axis = NSLayoutConstraint.Axis.horizontal
             itemView.alignment = .fill
             itemView.distribution = .fill
@@ -91,6 +92,18 @@ extension UIBarButtonItem {
         else if view is UIImageView {
             stackView.insertArrangedSubview(view, at: 0)
         }
+        var width: CGFloat = 0.0
+        for v in stackView.arrangedSubviews {
+            if v is UILabel {
+                width += 40.0
+            }
+            if v is UIImageView {
+                width += 30.0
+            }
+        }
+        var frame = stackView.frame
+        frame.size.width = width
+        stackView.frame = frame
     }
     
     func selectionBlock(_ block: ItemAction?) -> UIBarButtonItem {
@@ -177,6 +190,14 @@ extension Bundle {
         }
         return appName
     }
+    
+    func getAppVersion() -> String {
+        var version = ""
+        if let v = object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String {
+            version = v
+        }
+        return version
+    }
 }
 
 extension FileManager {
@@ -198,8 +219,8 @@ extension FileManager {
             let encData = file.toAESencrypted(key, iv: iv) else {return false}
         var success = false
         do {
-            try removeItem(at: URL(fileURLWithPath: path))
             try encData.write(to: URL(fileURLWithPath: newPath), options: Data.WritingOptions.completeFileProtection)
+            try removeItem(at: URL(fileURLWithPath: path))
             success = true
         } catch {
             print("Failed to decrypt file error - \(error)")
@@ -212,8 +233,8 @@ extension FileManager {
             let decData = file.toAESdecrypted(key, iv: iv) else {return false}
         var success = false
         do {
-            try removeItem(at: URL(fileURLWithPath: path))
             try decData.write(to: URL(fileURLWithPath: newPath), options: Data.WritingOptions.completeFileProtection)
+            try removeItem(at: URL(fileURLWithPath: path))
             success = true
         } catch {
             print("Failed to decrypt file error - \(error)")
@@ -310,30 +331,30 @@ extension Data {
         let ivData = iv as NSData
         let keyData = key as NSData
         
-        let decryptLength = size_t(data.length + kCCBlockSizeAES128)
-        var decryptData = Data(count: decryptLength)
+        let cryptLength = size_t(data.length + kCCBlockSizeAES128)
+        var cryptData = Data(count: cryptLength)
         
-        var numBytesEncrypted: size_t = 0
+        var numBytesCrypted: size_t = 0
         
-        let decryptStatus = decryptData.withUnsafeMutableBytes { decryptBytes in
+        let cryptStatus = cryptData.withUnsafeMutableBytes { cryptBytes in
             CCCrypt(CCOperation(operation), //kCCDecrypt
                 CCAlgorithm(kCCAlgorithmAES),
                 CCOptions(kCCOptionPKCS7Padding),
                 keyData.bytes, size_t(size), //kCCKeySizeAES128
                 ivData.bytes,
                 data.bytes, data.length,
-                decryptBytes, decryptLength,
-                &numBytesEncrypted)
+                cryptBytes, cryptLength,
+                &numBytesCrypted)
         }
         
-        if UInt32(decryptStatus) == UInt32(kCCSuccess) {
-            decryptData.removeSubrange(numBytesEncrypted..<decryptData.count)
+        if UInt32(cryptStatus) == UInt32(kCCSuccess) {
+            cryptData.removeSubrange(numBytesCrypted..<cryptData.count)
         }
         else {
-            print("Failed to encrypt - error: \(decryptStatus)")
+            print("Failed to crypt - error: \(cryptStatus)")
         }
         
-        return decryptData
+        return cryptData
     }
     
     func toUIImage() -> UIImage? {
@@ -354,6 +375,24 @@ extension Data {
             SecRandomCopyBytes(kSecRandomDefault, length, mutableBytes)
         }
         return data
+    }
+}
+
+extension Float {
+    func toString() -> String {
+        return String(describing: self)
+    }
+}
+
+extension Int {
+    func toString() -> String {
+        return String(describing: self)
+    }
+}
+
+extension Error {
+    func toString() -> String {
+        return String(describing: self)
     }
 }
 

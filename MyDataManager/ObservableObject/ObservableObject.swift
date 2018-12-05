@@ -125,18 +125,21 @@ class ObservableObject: NSObject {
             return
         }
         
-        executionQueue.sync { [weak self] in
-            guard let `self` = self else {return}
-            guard let propertySelectorSubcriberIds = selectorSubcribers[kPath] else {return}
+        guard let propertySelectorSubcriberIds = selectorSubcribers[kPath] else {return}
+        let keyPathValue = value(forKey: kPath)
+        let _subcriberIds = self.subcriberIds
+        let _subcriberById = self.subcriberById
+        
+        executionQueue.async {
             for subcriberId in propertySelectorSubcriberIds {
-                if let sub = self.subcriberById[subcriberId] {
-                    sub.subBlock?(kPath, value(forKey: kPath))
+                if let sub = _subcriberById[subcriberId] {
+                    sub.subBlock?(kPath, keyPathValue)
                 }
             }
             
-            for subcriberId in subcriberIds {
-                if let sub = self.subcriberById[subcriberId] {
-                    sub.subBlock?(kPath, value(forKey: kPath))
+            for subcriberId in _subcriberIds {
+                if let sub = _subcriberById[subcriberId] {
+                    sub.subBlock?(kPath, keyPathValue)
                 }
             }
         }

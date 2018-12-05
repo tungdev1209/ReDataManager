@@ -18,6 +18,7 @@ enum MyCoreDataError: Error {
     case DeleteObjectsFail
     case InvalidStoreURL
     case ProtectStoreFail
+    case ReadStoreFail
     case LoadStoreFail
     case Unknown
 }
@@ -91,7 +92,7 @@ class MyCoreDataOperation {
             default:
                 context = MyCoreDataStack.shared.managedObjectContext()
             }
-        }, asynchronously: false)
+        })
         return context
     }
     
@@ -151,13 +152,10 @@ class MyCoreDataOperation {
         })
     }
     
-    class func cleanup() {
-        let operation = MyCoreDataOperation()
-        MyCoreDataManager.shared.cacheOperation(operation)
+    class func unload() {
         MyCoreDataManager.shared.cleanup({
             MyCoreDataStack.shared.unload()
             MyCoreDataManager.shared.loadPersistentSuccess = false
-            MyCoreDataManager.shared.removeOperation(operation)
         })
     }
     
@@ -488,7 +486,7 @@ fileprivate class MyCoreDataManager {
     }
     
     func cleanup(_ cleaning: (() -> Void)?) {
-        executionQueue.async(flags: .barrier) {
+        executionQueue.sync(flags: .barrier) {
             cleaning?()
         }
     }
@@ -555,12 +553,15 @@ fileprivate class MyCoreDataStack {
     private let contextsQueue = DispatchQueue.init(label: "com.mycoredata.stack.contexts")
     
     private var protectStoreBlock: (() -> Void)?
+    private var unloadStoreBlock: (() -> Void)?
     
     lazy private var contexts: NSHashTable<NSManagedObjectContext> = {
         return NSHashTable<NSManagedObjectContext>(options: NSPointerFunctions.Options.weakMemory)
     }()
     
     func unload() {
+        unloadStoreBlock?()
+        unloadStoreBlock = nil
         protectStoreBlock?()
         protectStoreBlock = nil
         backgroundContext = nil
@@ -597,24 +598,27 @@ fileprivate class MyCoreDataStack {
         }
         
         // Check protection
+        let storeEncPath = appModelPathURL.appendingPathComponent(configuration.modelName + "_enc.sqlite")
+        let storeDecPath = appModelPathURL.appendingPathComponent(configuration.modelName + ".sqlite")
+        
+        if FileManager.default.fileExists(atPath: storeEncPath.path),
+            !FileManager.default.decryptAESFileAt(storeEncPath.path, newPath: storeDecPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
+            completion?(MyCoreDataError.ReadStoreFail)
+            return
+        }
+        
         if configuration.protection {
-            let storeEncPath = appModelPathURL.appendingPathComponent(configuration.modelName + "_enc.sqlite")
-            let storeDecPath = appModelPathURL.appendingPathComponent(configuration.modelName + ".sqlite")
-            if FileManager.default.fileExists(atPath: storeEncPath.path),
-                !FileManager.default.decryptAESFileAt(storeEncPath.path, newPath: storeDecPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
-                completion?(MyCoreDataError.ProtectStoreFail)
-                return
-            }
-            protectStoreBlock = { [weak self] in
-                guard let `self` = self else {return}
-                let stores = self.persistentContainer.persistentStoreCoordinator.persistentStores
-                for store in stores {
-                    try? self.persistentContainer.persistentStoreCoordinator.remove(store)
-                }
-                
-                if FileManager.default.fileExists(atPath: storeDecPath.path),
-                    !FileManager.default.encryptAESFileAt(storeDecPath.path, newPath: storeEncPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
-                    print("Could not Encrypt store, might be leak sensitive information")
+            let subFileSHM = appModelPathURL.appendingPathComponent(configuration.modelName + ".sqlite-shm")
+            let subFileWAL = appModelPathURL.appendingPathComponent(configuration.modelName + ".sqlite-wal")
+            protectStoreBlock = {
+                if FileManager.default.fileExists(atPath: storeDecPath.path) {
+                    if FileManager.default.encryptAESFileAt(storeDecPath.path, newPath: storeEncPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
+                        try? FileManager.default.removeItem(atPath: subFileSHM.path)
+                        try? FileManager.default.removeItem(atPath: subFileWAL.path)
+                    }
+                    else {
+                        print("Could not Encrypt store, might be leak sensitive information")
+                    }
                 }
             }
         }
@@ -649,6 +653,14 @@ fileprivate class MyCoreDataStack {
             }
             completion?(err)
         })
+        
+        unloadStoreBlock = { [weak self] in
+            guard let `self` = self else {return}
+            let stores = self.persistentContainer.persistentStoreCoordinator.persistentStores
+            for store in stores {
+                try? self.persistentContainer.persistentStoreCoordinator.remove(store)
+            }
+        }
     }
     
     private func didInitializeContainer(_ error: MyCoreDataError?) {
@@ -718,6 +730,8 @@ fileprivate class MyCoreDataStack {
 class MyCoreDataOperationConfiguration {
     var modelName = ""
     var modelPath = ""
+    var fullModelPath = ""
+    var fullModelDirectory = ""
     var appsGroupName = ""
     var storeType = MyCoreDataStoreType.SQLite
     var shouldLoadStoreAsynchronously = true
@@ -754,7 +768,7 @@ class MyCoreDataOperationConfiguration {
         return self
     }
     
-    func protectionAES128Key(_ key: (key: [UInt8], iv: [UInt8])) -> MyCoreDataOperationConfiguration {
+    func protectionAESKey(_ key: (key: [UInt8], iv: [UInt8])) -> MyCoreDataOperationConfiguration {
         protectionAESKey = key
         return self
     }
