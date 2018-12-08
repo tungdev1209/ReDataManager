@@ -51,6 +51,8 @@ class MyRequestOperation {
     var retryTimes = 3
     var shouldRequestAsynchronously = true
     
+    var requestConfiguration: MyRequestConfiguration?
+    
     private(set) var urlRequest: URLRequest?
     private(set) var errors: [Error]?
     private(set) var response: URLResponse?
@@ -82,6 +84,11 @@ class MyRequestOperation {
             errors = [Error]()
         }
         errors!.append(error)
+    }
+    
+    func requestConfiguration(_ config: MyRequestConfiguration?) -> MyRequestOperation {
+        requestConfiguration = config
+        return self
     }
     
     func sessionConfiguration(_ sessionConfig: URLSessionConfiguration) -> MyRequestOperation {
@@ -148,6 +155,21 @@ class MyRequestOperation {
         return self
     }
     
+    private func applyConfig() {
+        guard let requestConfiguration = requestConfiguration else {return}
+        requestMethod = requestConfiguration.requestMethod
+        sessionConfiguration = requestConfiguration.sessionConfiguration
+        sessionDelegate = requestConfiguration.sessionDelegate
+        sessionDelegateQueue = requestConfiguration.sessionDelegateQueue
+        cachePolicy = requestConfiguration.cachePolicy
+        timeout = requestConfiguration.timeout
+        secondaryTimeout = requestConfiguration.secondaryTimeout
+        headers = requestConfiguration.headers
+        postBody = requestConfiguration.postBody
+        retryTimes = requestConfiguration.retryTimes
+        shouldRequestAsynchronously = requestConfiguration.shouldRequestAsynchronously
+    }
+    
     func execute(_ completion: MyRequestCompletion?) {
         guard errors == nil else {
             print("MyRequest - Errors: \(String(describing: errors))")
@@ -158,6 +180,9 @@ class MyRequestOperation {
         MyRequestManager.shared.cacheOperation(self)
         
         callStack = Thread.callStackSymbols
+        
+        // apply configuration
+        applyConfig()
         
         // add headers
         for field in headers.keys {
@@ -192,8 +217,8 @@ class MyRequestOperation {
             synchronousRequestSemaphore?.wait()
             
             // for sync request
-            completion?(self.responseData, self.errors, self)
             MyRequestManager.shared.removeOperation(self)
+            completion?(self.responseData, self.errors, self)
         }
     }
     
@@ -226,8 +251,8 @@ class MyRequestOperation {
             }
             else {
                 // for async request
-                completion?(self.responseData, self.errors, self)
                 MyRequestManager.shared.removeOperation(self)
+                completion?(self.responseData, self.errors, self)
             }
         }).resume()
     }
@@ -338,5 +363,84 @@ fileprivate class MyRequestManager {
             guard let `self` = self else {return}
             self.operations.removeValue(forKey: operation._id)
         }
+    }
+}
+
+class MyRequestConfiguration {
+    private(set) var requestMethod = RequestMethod.GET
+    
+    var sessionConfiguration: URLSessionConfiguration = .ephemeral
+    var sessionDelegate: URLSessionDelegate?
+    var sessionDelegateQueue: OperationQueue?
+    var cachePolicy = URLRequest.CachePolicy.useProtocolCachePolicy
+    var timeout = 60.0
+    var secondaryTimeout = 30.0
+    var headers = [String: String]()
+    var postBody: Any?
+    var retryTimes = 3
+    var shouldRequestAsynchronously = true
+    
+    convenience init(_ method: RequestMethod) {
+        self.init()
+        requestMethod = method
+    }
+    
+    func sessionConfiguration(_ sessionConfig: URLSessionConfiguration) -> MyRequestConfiguration {
+        sessionConfiguration = sessionConfig
+        return self
+    }
+    
+    func sessionDelegate(_ delegate: URLSessionDelegate?) -> MyRequestConfiguration {
+        sessionDelegate = delegate
+        return self
+    }
+    
+    func sessionDelegateQueue(_ queue: OperationQueue?) -> MyRequestConfiguration {
+        sessionDelegateQueue = queue
+        return self
+    }
+    
+    func cachePolicy(_ policy: URLRequest.CachePolicy) -> MyRequestConfiguration {
+        cachePolicy = policy
+        return self
+    }
+    
+    func timeoutInterval(_ timeoutInterval: TimeInterval) -> MyRequestConfiguration {
+        timeout = timeoutInterval
+        return self
+    }
+    
+    func secondaryTimeoutInterval(_ secTimeoutInterval: TimeInterval) -> MyRequestConfiguration {
+        secondaryTimeout = secTimeoutInterval
+        return self
+    }
+    
+    func retryTimes(_ retry: Int) -> MyRequestConfiguration {
+        retryTimes = retry
+        return self
+    }
+    
+    func headers(_ requestHeaders: [String: String]) -> MyRequestConfiguration {
+        for field in requestHeaders.keys {
+            headers[field] = requestHeaders[field]
+        }
+        return self
+    }
+    
+    func postImage(_ imageData: MyImageData) -> MyRequestConfiguration {
+        guard postBody == nil else {return self}
+        postBody = imageData
+        return self
+    }
+    
+    func postData(_ data: Data?) -> MyRequestConfiguration {
+        guard postBody == nil else {return self}
+        postBody = data
+        return self
+    }
+    
+    func shouldRequestAsynchronously(_ requestAsync: Bool) -> MyRequestConfiguration {
+        shouldRequestAsynchronously = requestAsync
+        return self
     }
 }
