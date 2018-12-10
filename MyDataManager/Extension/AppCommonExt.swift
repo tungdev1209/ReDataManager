@@ -10,6 +10,12 @@ import UIKit
 import WebKit
 import CommonCrypto
 
+extension NSObject {
+    func toString() -> String {
+        return String(describing: self)
+    }
+}
+
 extension String {
     func localizableString(loc: String) -> String {
         let path = Bundle.main.path(forResource: loc, ofType: "lproj")

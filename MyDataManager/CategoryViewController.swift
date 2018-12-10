@@ -13,13 +13,31 @@ class CategoryViewController: UIViewController {
     @IBOutlet weak var titleTf: UITextField!
     @IBOutlet weak var saveBtn: UIButton!
     
+    @IBOutlet weak var playerView: UIView!
     var catTitle: String = ""
+    
+    let cleanPlayerBag = CleanPlayerBag()
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
         // Do any additional setup after loading the view.
         view.backgroundColor = UIColor.lightGray
+        
+        let videoSkinView = Bundle.main.loadNibNamed("VideoSkin", owner: nil, options: nil)?.first as! VideoSkin
+        videoSkinView.frame = playerView.bounds
+//        videoSkinView.backgroundColor = UIColor.blue
+        playerView.addSubview(videoSkinView)
+        
+//        if let url = URL(string: "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8") {
+//            MyPlayerController(url).configuration(MyPlayerConfiguration().shouldPlayAfterLoaded(true))
+//                .execute({ [weak self] (controller) in
+//                    guard let `self` = self else {return}
+//                    guard controller.error == nil else {return}
+//                    self.playerView.addSubview(controller.playerView)
+//                    controller.playerView.frame = self.playerView.bounds
+//                }).cleanBy(cleanPlayerBag)
+//        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -60,6 +78,6 @@ class CategoryViewController: UIViewController {
     }
     
     deinit {
-        MyCoreDataOperation.cleanup()
+        MyCoreDataOperation.unload()
     }
 }

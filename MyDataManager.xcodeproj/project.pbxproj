@@ -40,6 +40,9 @@
 		18B256FF21A7186000E9DB1B /* CategoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B256FE21A7186000E9DB1B /* CategoryViewController.swift */; };
 		18B2570021A7186000E9DB1B /* CategoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B256FE21A7186000E9DB1B /* CategoryViewController.swift */; };
 		18B2570621AA873B00E9DB1B /* MyKeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18B2570521AA873B00E9DB1B /* MyKeychainService.swift */; };
+		18D98FE121BB968300FD1EA7 /* MyPlayerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18D98FE021BB968300FD1EA7 /* MyPlayerController.swift */; };
+		18D98FE321BCFC8400FD1EA7 /* VideoSkin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18D98FE221BCFC8400FD1EA7 /* VideoSkin.swift */; };
+		18D98FE521BCFCCA00FD1EA7 /* VideoSkin.xib in Resources */ = {isa = PBXBuildFile; fileRef = 18D98FE421BCFCCA00FD1EA7 /* VideoSkin.xib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +91,9 @@
 		18B256FE21A7186000E9DB1B /* CategoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryViewController.swift; sourceTree = "<group>"; };
 		18B2570421A9515900E9DB1B /* MyDataManager.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MyDataManager.entitlements; sourceTree = "<group>"; };
 		18B2570521AA873B00E9DB1B /* MyKeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyKeychainService.swift; sourceTree = "<group>"; };
+		18D98FE021BB968300FD1EA7 /* MyPlayerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyPlayerController.swift; sourceTree = "<group>"; };
+		18D98FE221BCFC8400FD1EA7 /* VideoSkin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoSkin.swift; sourceTree = "<group>"; };
+		18D98FE421BCFCCA00FD1EA7 /* VideoSkin.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = VideoSkin.xib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,6 +144,7 @@
 		18AE44F321A151300036199C /* MyDataManager */ = {
 			isa = PBXGroup;
 			children = (
+				18D98FDF21BB933200FD1EA7 /* Player */,
 				18AE455521A1C2B40036199C /* Model */,
 				18B256F221A5C31F00E9DB1B /* ObservableObject */,
 				18AE452F21A151630036199C /* Extension */,
@@ -198,6 +205,8 @@
 			isa = PBXGroup;
 			children = (
 				18AE453621A151630036199C /* MyAlert.swift */,
+				18D98FE221BCFC8400FD1EA7 /* VideoSkin.swift */,
+				18D98FE421BCFCCA00FD1EA7 /* VideoSkin.xib */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -235,6 +244,14 @@
 				18B256F321A5C31F00E9DB1B /* ObservableObject.swift */,
 			);
 			path = ObservableObject;
+			sourceTree = "<group>";
+		};
+		18D98FDF21BB933200FD1EA7 /* Player */ = {
+			isa = PBXGroup;
+			children = (
+				18D98FE021BB968300FD1EA7 /* MyPlayerController.swift */,
+			);
+			path = Player;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -351,6 +368,7 @@
 			files = (
 				18AE44FF21A151330036199C /* LaunchScreen.storyboard in Resources */,
 				18AE44FC21A151330036199C /* Assets.xcassets in Resources */,
+				18D98FE521BCFCCA00FD1EA7 /* VideoSkin.xib in Resources */,
 				18AE44FA21A151300036199C /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -382,8 +400,10 @@
 				18AE44F721A151300036199C /* ViewController.swift in Sources */,
 				18AE453921A151630036199C /* MyRequestOperation.swift in Sources */,
 				18AE44F521A151300036199C /* AppDelegate.swift in Sources */,
+				18D98FE321BCFC8400FD1EA7 /* VideoSkin.swift in Sources */,
 				18AE455D21A1C2B40036199C /* Movie+CoreDataProperties.swift in Sources */,
 				18AE453E21A170350036199C /* MyDataManager.xcdatamodeld in Sources */,
+				18D98FE121BB968300FD1EA7 /* MyPlayerController.swift in Sources */,
 				18B2570621AA873B00E9DB1B /* MyKeychainService.swift in Sources */,
 				18B256F421A5C31F00E9DB1B /* ObservableObject.swift in Sources */,
 				18B256FF21A7186000E9DB1B /* CategoryViewController.swift in Sources */,

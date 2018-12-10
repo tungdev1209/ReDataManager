@@ -83,6 +83,11 @@
                                 <fontDescription key="fontDescription" type="system" pointSize="15"/>
                                 <textInputTraits key="textInputTraits"/>
                             </textField>
+                            <view contentMode="scaleToFill" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="KSa-qA-9uc">
+                                <rect key="frame" x="67" y="283" width="240" height="128"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <color key="backgroundColor" red="0.7843137255" green="0.31372549020000001" blue="0.078431372550000003" alpha="1" colorSpace="calibratedRGB"/>
+                            </view>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
@@ -95,6 +100,7 @@
                         <viewLayoutGuide key="safeArea" id="LR7-ln-EgX"/>
                     </view>
                     <connections>
+                        <outlet property="playerView" destination="KSa-qA-9uc" id="Gyq-0H-6cO"/>
                         <outlet property="saveBtn" destination="HM3-1s-NzC" id="o1G-v2-AcK"/>
                         <outlet property="titleTf" destination="aip-yd-HHf" id="iao-ho-G96"/>
                     </connections>
