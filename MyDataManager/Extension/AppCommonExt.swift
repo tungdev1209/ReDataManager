@@ -162,6 +162,19 @@ class WebNavigationHandler: NSObject, WKNavigationDelegate {
     }
 }
 
+extension NSLayoutConstraint {
+    static func activateFullViewFor(_ view: UIView) -> (left: NSLayoutConstraint, top: NSLayoutConstraint, width: NSLayoutConstraint, height: NSLayoutConstraint) {
+        view.translatesAutoresizingMaskIntoConstraints = false
+        let w = NSLayoutConstraint(item: view, attribute: NSLayoutConstraint.Attribute.width, relatedBy: NSLayoutConstraint.Relation.equal, toItem: view.superview, attribute: NSLayoutConstraint.Attribute.width, multiplier: 1.0, constant: 0.0)
+        let h = NSLayoutConstraint(item: view, attribute: NSLayoutConstraint.Attribute.height, relatedBy: NSLayoutConstraint.Relation.equal, toItem: view.superview, attribute: NSLayoutConstraint.Attribute.height, multiplier: 1.0, constant: 0.0)
+        let top = NSLayoutConstraint(item: view, attribute: NSLayoutConstraint.Attribute.top, relatedBy: NSLayoutConstraint.Relation.equal, toItem: view.superview, attribute: NSLayoutConstraint.Attribute.top, multiplier: 1.0, constant: 0.0)
+        let left = NSLayoutConstraint(item: view, attribute: NSLayoutConstraint.Attribute.left, relatedBy: NSLayoutConstraint.Relation.equal, toItem: view.superview, attribute: NSLayoutConstraint.Attribute.left, multiplier: 1.0, constant: 0.0)
+        let constraints = [left, top, w, h]
+        NSLayoutConstraint.activate(constraints)
+        return (left, top, w, h)
+    }
+}
+
 extension UINavigationBar {
     func transparent() {
         setBackgroundImage(UIImage(), for: .default)
