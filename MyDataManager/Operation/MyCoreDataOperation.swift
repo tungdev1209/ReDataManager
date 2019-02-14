@@ -92,7 +92,7 @@ class MyCoreDataOperation {
             default:
                 context = MyCoreDataStack.shared.managedObjectContext()
             }
-        })
+        }, asynchronously: false)
         return context
     }
     

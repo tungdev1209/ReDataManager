@@ -65,8 +65,7 @@ class CategoryViewController: UIViewController {
             .executeFetch(Category.self, completion: { [weak self] (operation, cats) in
                 guard let `self` = self else {return}
                 guard let cat = operation.createObjectIfNeeded(cats?.first) else {return}
-                DispatchQueue.main.sync { [weak self] in
-                    guard let `self` = self else {return}
+                DispatchQueue.main.sync {
                     cat.subTitle = self.titleTf.text
                 }
                 cat.title = self.catTitle
