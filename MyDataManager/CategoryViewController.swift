@@ -29,15 +29,19 @@ class CategoryViewController: UIViewController {
 //        videoSkinView.backgroundColor = UIColor.blue
         playerView.addSubview(videoSkinView)
         
-//        if let url = URL(string: "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8") {
-//            MyPlayerController(url).configuration(MyPlayerConfiguration().shouldPlayAfterLoaded(true))
-//                .execute({ [weak self] (controller) in
-//                    guard let `self` = self else {return}
-//                    guard controller.error == nil else {return}
-//                    self.playerView.addSubview(controller.playerView)
-//                    controller.playerView.frame = self.playerView.bounds
-//                }).cleanBy(cleanPlayerBag)
-//        }
+        initilizeVideo()
+    }
+    
+    func initilizeVideo() {
+        guard let url = URL(string: "http://devimages.apple.com/iphone/samples/bipbop/bipbopall.m3u8") else {return}
+        MyPlayerController(url).configuration(MyPlayerConfiguration().shouldPlayAfterLoaded(true))
+            .execute({ [weak self] (controller) in
+                guard let `self` = self else {return}
+                guard controller.error == nil else {return}
+                self.playerView.addSubview(controller.playerView)
+                self.playerView.sendSubviewToBack(controller.playerView)
+                controller.playerView.frame = self.playerView.bounds
+            }).cleanBy(cleanPlayerBag)
     }
     
     override func viewWillAppear(_ animated: Bool) {

@@ -110,7 +110,6 @@ class MyPlayerController: NSObject {
     }
     
     deinit {
-        print("\(toString()) DEALLOC")
         playerItem?.removeObserver(self, forKeyPath: #keyPath(AVPlayerItem.status))
         removeObserver(self, forKeyPath: #keyPath(MyPlayerController.cleanPlayerBag))
     }

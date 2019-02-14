@@ -13,7 +13,6 @@ class VideoSkin: UIView {
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        print(toString())
         btnPlay.addTarget(self, action: #selector(play), for: UIControl.Event.touchUpInside)
     }
     
