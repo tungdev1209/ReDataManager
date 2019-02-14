@@ -513,14 +513,19 @@ fileprivate class MyCoreDataManager {
     }
     
     func execute(_ executing: (() -> Void)?, asynchronously: Bool = true) {
-        guard isExecutable() else {return}
         var semaphore: DispatchSemaphore?
         if !asynchronously {
             semaphore = DispatchSemaphore(value: 0)
         }
-        executionQueue.async {
+        executionQueue.async { [weak self] in
+            defer {
+                semaphore?.signal()
+            }
+            
+            guard let `self` = self else {return}
+            guard self.isExecutable() else {return}
+            
             executing?()
-            semaphore?.signal()
         }
         if !asynchronously {
             semaphore?.wait()
@@ -528,14 +533,19 @@ fileprivate class MyCoreDataManager {
     }
     
     func execute(_ executing: (() -> Void)?, flags: DispatchWorkItemFlags, asynchronously: Bool = true) {
-        guard isExecutable() else {return}
         var semaphore: DispatchSemaphore?
         if !asynchronously {
             semaphore = DispatchSemaphore(value: 0)
         }
-        executionQueue.async(flags: flags) {
+        executionQueue.async(flags: flags) { [weak self] in
+            defer {
+                semaphore?.signal()
+            }
+            
+            guard let `self` = self else {return}
+            guard self.isExecutable() else {return}
+            
             executing?()
-            semaphore?.signal()
         }
         if !asynchronously {
             semaphore?.wait()
