@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CommonCrypto
 
 extension String {
     func localize() -> String {
@@ -44,6 +45,18 @@ extension String {
         return data(using: String.Encoding.utf8)
     }
     
+    func toSHA256(key: String = "") -> String {
+        if key.isEmpty {
+            let sha2 = self.data(using: String.Encoding.utf8)?.toSHA256()
+            return sha2?.map { String(format: "%02hhx", $0) }.joined() ?? ""
+        }
+        var digest = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
+        
+        CCHmac(CCHmacAlgorithm(kCCHmacAlgSHA256), key, key.count, self, count, &digest)
+        let data = Data(bytes: digest)
+        return data.map { String(format: "%02hhx", $0) }.joined()
+    }
+    
     func asFilePath(_ fileManagerObject: FileManager = FileManager.default) -> StringFilePath {
         return StringFilePath(path: self, fileManager: fileManagerObject)
     }
@@ -79,7 +92,7 @@ struct StringFilePath {
         return fileManager.contents(atPath: path)
     }
     
-    func delete() -> Bool {
+    func remove() -> Bool {
         if !isFile {return true}
         var result = false
         do {

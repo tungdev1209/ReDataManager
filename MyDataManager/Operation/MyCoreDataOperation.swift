@@ -242,7 +242,6 @@ class MyCoreDataOperation {
         var myError: MyCoreDataError?
         
         MyCoreDataManager.shared.execute({ [weak self] in
-            print(MyCoreDataManager.shared.operations)
             guard let `self` = self else {return}
             
             self.context?.performAndWait { [weak self] in
@@ -565,6 +564,8 @@ fileprivate class MyCoreDataStack {
     private var protectStoreBlock: (() -> Void)?
     private var unloadStoreBlock: (() -> Void)?
     
+    private let coredataFileManager = FileManager()
+    
     lazy private var contexts: NSHashTable<NSManagedObjectContext> = {
         return NSHashTable<NSManagedObjectContext>(options: NSPointerFunctions.Options.weakMemory)
     }()
@@ -601,7 +602,7 @@ fileprivate class MyCoreDataStack {
         // Check store path
         if !configuration.modelPath.isEmpty {
             appModelPathURL.appendPathComponent(configuration.modelPath)
-            if !FileManager.default.createDirectoryIfNeeded(appModelPathURL.path, attributes: nil) {
+            if !coredataFileManager.createDirectoryIfNeeded(appModelPathURL.path, attributes: nil) {
                 completion?(MyCoreDataError.InvalidStoreURL)
                 return
             }
@@ -611,20 +612,24 @@ fileprivate class MyCoreDataStack {
         let storeEncPath = appModelPathURL.appendingPathComponent(configuration.modelName + "_enc.sqlite")
         let storeDecPath = appModelPathURL.appendingPathComponent(configuration.modelName + ".sqlite")
         
-        if FileManager.default.fileExists(atPath: storeEncPath.path),
-            !FileManager.default.decryptAESFileAt(storeEncPath.path, newPath: storeDecPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
-            completion?(MyCoreDataError.ReadStoreFail)
-            return
+        if coredataFileManager.fileExists(atPath: storeEncPath.path) {
+            let decryptStatus = coredataFileManager.decryptAESFileAt(storeEncPath.path, newPath: storeDecPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv)
+            if !decryptStatus || (decryptStatus && !storeEncPath.path.asFilePath(coredataFileManager).remove()) {
+                completion?(MyCoreDataError.ReadStoreFail)
+                return
+            }
         }
         
         if configuration.protection {
             let subFileSHM = appModelPathURL.appendingPathComponent(configuration.modelName + ".sqlite-shm")
             let subFileWAL = appModelPathURL.appendingPathComponent(configuration.modelName + ".sqlite-wal")
-            protectStoreBlock = {
-                if FileManager.default.fileExists(atPath: storeDecPath.path) {
-                    if FileManager.default.encryptAESFileAt(storeDecPath.path, newPath: storeEncPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
-                        try? FileManager.default.removeItem(atPath: subFileSHM.path)
-                        try? FileManager.default.removeItem(atPath: subFileWAL.path)
+            protectStoreBlock = { [weak self] in
+                guard let `self` = self else {return}
+                if self.coredataFileManager.fileExists(atPath: storeDecPath.path) {
+                    if self.coredataFileManager.encryptAESFileAt(storeDecPath.path, newPath: storeEncPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
+                        _ = storeDecPath.path.asFilePath(self.coredataFileManager).remove()
+                        _ = subFileSHM.path.asFilePath(self.coredataFileManager).remove()
+                        _ = subFileWAL.path.asFilePath(self.coredataFileManager).remove()
                     }
                     else {
                         print("Could not Encrypt store, might be leak sensitive information")
@@ -700,9 +705,9 @@ fileprivate class MyCoreDataStack {
     
     func applicationDocumentsDirectory(_ groupName: String = "") -> URL? {
         if groupName.isEmpty {
-            return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            return coredataFileManager.urls(for: .documentDirectory, in: .userDomainMask).first
         }
-        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupName)
+        return coredataFileManager.containerURL(forSecurityApplicationGroupIdentifier: groupName)
     }
     
     func managedObjectContext() -> NSManagedObjectContext {

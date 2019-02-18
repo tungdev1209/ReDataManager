@@ -30,6 +30,17 @@ extension Data {
         return model
     }
     
+    func toSHA256() -> Data? {
+        var digestData = Data(count: Int(CC_SHA256_DIGEST_LENGTH))
+        
+        _ = digestData.withUnsafeMutableBytes { digestBytes in
+            withUnsafeBytes { bytes in
+                CC_SHA256(bytes, CC_LONG(count), digestBytes)
+            }
+        }
+        return digestData
+    }
+    
     func toAESKey(_ length: Int = kCCKeySizeAES256) -> Data? {
         var status = Int32(0)
         var derivedBytes = [UInt8](repeating: 0, count: length)

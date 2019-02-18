@@ -37,7 +37,6 @@ extension FileManager {
         var success = false
         do {
             try encData.write(to: URL(fileURLWithPath: newPath), options: Data.WritingOptions.completeFileProtection)
-            try removeItem(at: URL(fileURLWithPath: path))
             success = true
         } catch {
             print("Failed to decrypt file error - \(error)")
@@ -51,7 +50,6 @@ extension FileManager {
         var success = false
         do {
             try decData.write(to: URL(fileURLWithPath: newPath), options: Data.WritingOptions.completeFileProtection)
-            try removeItem(at: URL(fileURLWithPath: path))
             success = true
         } catch {
             print("Failed to decrypt file error - \(error)")
