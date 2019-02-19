@@ -304,6 +304,7 @@ class MyCoreDataOperation {
             self.context?.perform { [weak self] in
                 guard let `self` = self else {return}
                 
+                print("\(self.context!.concurrencyType == NSManagedObjectContextConcurrencyType.privateQueueConcurrencyType)")
                 self.operating?(self)
                 
                 do {

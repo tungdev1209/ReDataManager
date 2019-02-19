@@ -34,17 +34,7 @@ extension ViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard let vc = storyboard?.instantiateViewController(withIdentifier: String(describing: CategoryViewController.self)) as? CategoryViewController else {return}
         vc.catTitle = cells[indexPath.row]
-        MyCoreDataOperation
-            .startup(MyCoreDataOperationConfiguration(Bundle.main.getAppName())
-                .appsGroupName("group.com.tung.mydatamanager")
-                .modelPath("category/\(cells[indexPath.row])")
-                .protection(true)
-                .protectionAESKey((key: key, iv: iv)))
-            { [weak self] (error) in
-                guard let `self` = self else {return}
-                print("Did startup - \(error == nil)")
-                self.navigationController?.pushViewController(vc, animated: true)
-        }
+        navigationController?.pushViewController(vc, animated: true)
     }
 }
 

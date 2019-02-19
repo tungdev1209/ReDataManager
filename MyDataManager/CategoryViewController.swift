@@ -26,10 +26,38 @@ class CategoryViewController: UIViewController {
         
         let videoSkinView = Bundle.main.loadNibNamed("VideoSkin", owner: nil, options: nil)?.first as! VideoSkin
         videoSkinView.frame = playerView.bounds
-//        videoSkinView.backgroundColor = UIColor.blue
         playerView.addSubview(videoSkinView)
         
-        initilizeVideo()
+        let coredataConf = MyCoreDataOperationConfiguration(Bundle.main.getAppName())
+            .appsGroupName("group.com.tung.mydatamanager")
+            .modelPath("category/\(catTitle)")
+            .protection(true)
+            .protectionAESKey((key: key, iv: iv))
+        
+        MyCoreDataOperation.startup(coredataConf) { [weak self] (error) in
+            guard let `self` = self else {return}
+            print("Did startup - \(error == nil)")
+            
+            if let _ = error {
+                MyAlert("Cannot load db").action("OK", style: UIAlertAction.Style.cancel, handler: { [weak self] (action) in
+                    guard let `self` = self else {return}
+                    self.navigationController?.popViewController(animated: true)
+                }).present(self)
+                return
+            }
+            
+            MyCoreDataOperation(.Background)
+                .delegateQueue(DispatchQueue.main)
+                .predicate(NSPredicate(format: "%K == %@", #keyPath(Category.title), self.catTitle))
+                .executeFetch(Category.self)
+                { [weak self] (_, cats) in
+                    guard let `self` = self else {return}
+                    guard let cat = cats?.first else {return}
+                    self.title = cat.subTitle
+            }
+        }
+        
+//        initilizeVideo()
     }
     
     func initilizeVideo() {
@@ -42,21 +70,6 @@ class CategoryViewController: UIViewController {
                 self.playerView.sendSubviewToBack(controller.playerView)
                 controller.playerView.frame = self.playerView.bounds
             }).cleanBy(cleanPlayerBag)
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        if !catTitle.isEmpty {
-            MyCoreDataOperation(.Background)
-                .delegateQueue(DispatchQueue.main)
-                .predicate(NSPredicate(format: "%K == %@", #keyPath(Category.title), catTitle))
-                .executeFetch(Category.self)
-                { [weak self] (_, cats) in
-                    guard let `self` = self else {return}
-                    guard let cat = cats?.first else {return}
-                    self.title = cat.subTitle
-            }
-        }
     }
     
     @IBAction func btnSavePressed(_ sender: Any) {
@@ -72,10 +85,9 @@ class CategoryViewController: UIViewController {
                 operation.delegateQueue(DispatchQueue.main)
                     .executeSave({ [weak self] (_, error) in
                         guard let `self` = self else {return}
+                        guard error == nil else {return}
                         print("Did save - \(String(describing: error))")
-                        if error == nil {
-                            self.title = self.titleTf.text
-                        }
+                        self.title = self.titleTf.text
                     })
             })
     }
