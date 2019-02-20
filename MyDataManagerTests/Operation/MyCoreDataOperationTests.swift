@@ -96,17 +96,19 @@ class MyCoreDataSaveExecutionTests: XCTestCase {
     }
     
     func testSave() {
-        let setupExpectation = expectation(description: "coredata startup")
+        let exp = expectation(description: "coredata startup")
+        var err: MyCoreDataError?
         operation.operating({ (op) in
-            let cat = op.createObject(Category.self)
+            let cat = NSEntityDescription.insertNewObject(forEntityName: "Category", into: op.context!) as? Category
             cat?.title = "Test"
             cat?.subTitle = "Testing..."
         }).executeSave { (_, error) in
             print("Did save - \(error == nil)")
-            XCTAssertTrue(error == nil)
-            setupExpectation.fulfill()
+            err = error
+            exp.fulfill()
         }
         waitForExpectations(timeout: 1.0, handler: nil)
+        XCTAssertTrue(err == nil)
     }
     
 }
