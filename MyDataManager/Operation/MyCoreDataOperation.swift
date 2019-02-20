@@ -135,21 +135,33 @@ class MyCoreDataOperation {
     class func startup(_ configuration: MyCoreDataOperationConfiguration, completion: ((MyCoreDataError?) -> Void)?) {
         let operation = MyCoreDataOperation()
         MyCoreDataManager.shared.cacheOperation(operation)
+        
+        var error: MyCoreDataError?
+        let isAsyncStartup = configuration.shouldLoadStoreAsynchronously
         MyCoreDataManager.shared.startup({
-            var error: MyCoreDataError?
-            let semaphore = DispatchSemaphore(value: 0)
+            var semaphore: DispatchSemaphore?
+            if isAsyncStartup {
+                semaphore = DispatchSemaphore(value: 0)
+            }
             MyCoreDataStack.shared.loadPersistentContainer(configuration) { (coredataError) in
                 error = coredataError
                 MyCoreDataManager.shared.loadPersistentSuccess = error == nil
-                semaphore.signal()
+                semaphore?.signal()
             }
-            semaphore.wait()
-            MyCoreDataManager.shared.removeOperation(operation)
+            semaphore?.wait()
             
-            DispatchQueue.main.async {
-                completion?(error)
+            if isAsyncStartup {
+                MyCoreDataManager.shared.removeOperation(operation)
+                DispatchQueue.main.async {
+                    completion?(error)
+                }
             }
-        })
+        }, asynchronously: isAsyncStartup)
+        
+        if !isAsyncStartup {
+            MyCoreDataManager.shared.removeOperation(operation)
+            completion?(error)
+        }
     }
     
     class func unload() {
@@ -456,7 +468,7 @@ class MyCoreDataOperation {
                     completion?(self, myError)
                 }
             }
-            }, flags: .barrier)
+        }, flags: .barrier)
         
         // for sync request
         requestSemaphore?.wait()
@@ -479,9 +491,16 @@ fileprivate class MyCoreDataManager {
     let executionQueue = DispatchQueue.init(label: "com.mycoredata.execution", attributes: .concurrent)
     let completionQueue = DispatchQueue.init(label: "com.mycoredata.completion", attributes: .concurrent)
     
-    func startup(_ starting: (() -> Void)?) {
-        executionQueue.async(flags: .barrier) {
-            starting?()
+    func startup(_ starting: (() -> Void)?, asynchronously: Bool = true) {
+        if asynchronously {
+            executionQueue.async(flags: .barrier) {
+                starting?()
+            }
+        }
+        else {
+            executionQueue.sync(flags: .barrier) {
+                starting?()
+            }
         }
     }
     
@@ -633,25 +652,39 @@ fileprivate class MyCoreDataStack {
                         _ = subFileWAL.path.asFilePath(self.coredataFileManager).remove()
                     }
                     else {
-                        print("Could not Encrypt store, might be leak sensitive information")
+                        print("Could not Encrypt store, might be leak the sensitive information")
                     }
                 }
             }
         }
         
-        appModelPathURL.appendPathComponent(configuration.modelName + ".sqlite")
-        
-        let description = NSPersistentStoreDescription(url: appModelPathURL)
+        var description: NSPersistentStoreDescription!
+        if configuration.storeType == .SQLite {
+            appModelPathURL.appendPathComponent(configuration.modelName + ".sqlite")
+            description = NSPersistentStoreDescription(url: appModelPathURL)
+        }
+        else {
+            description = NSPersistentStoreDescription()
+        }
         description.shouldInferMappingModelAutomatically = true
         description.shouldMigrateStoreAutomatically = true
         description.shouldAddStoreAsynchronously = configuration.shouldLoadStoreAsynchronously
         description.type = configuration.storeType.stringValue()
         
-        persistentContainer = NSPersistentContainer(name: configuration.modelName)
+        // initilize persistent container
+        if let momodel = configuration.managedObjectModel {
+            persistentContainer = NSPersistentContainer(name: configuration.modelName, managedObjectModel: momodel)
+        }
+        else {
+            persistentContainer = NSPersistentContainer(name: configuration.modelName)
+        }
         persistentContainer.persistentStoreDescriptions = [description]
+        
+        // loading
+        var err: MyCoreDataError?
         persistentContainer.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            print("CoreData - Did load model at path: \(appModelPathURL.path)")
-            var err: MyCoreDataError?
+            print("CoreData - Did load model at path: \(String(describing: storeDescription.url?.path)), type: \(storeDescription.type)")
+            
             if let _ = error as NSError? {
                 // Replace this implementation with code to handle the error appropriately.
                 // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
@@ -667,7 +700,10 @@ fileprivate class MyCoreDataStack {
 //                fatalError("Unresolved error \(error), \(error.userInfo)")
                 err = MyCoreDataError.LoadStoreFail
             }
-            completion?(err)
+            
+            if configuration.shouldLoadStoreAsynchronously {
+                completion?(err)
+            }
         })
         
         unloadStoreBlock = { [weak self] in
@@ -676,6 +712,10 @@ fileprivate class MyCoreDataStack {
             for store in stores {
                 try? self.persistentContainer.persistentStoreCoordinator.remove(store)
             }
+        }
+        
+        if !configuration.shouldLoadStoreAsynchronously {
+            completion?(err)
         }
     }
     
@@ -746,8 +786,7 @@ fileprivate class MyCoreDataStack {
 class MyCoreDataOperationConfiguration {
     var modelName = ""
     var modelPath = ""
-    var fullModelPath = ""
-    var fullModelDirectory = ""
+    var managedObjectModel: NSManagedObjectModel?
     var appsGroupName = ""
     var storeType = MyCoreDataStoreType.SQLite
     var shouldLoadStoreAsynchronously = true
@@ -761,6 +800,11 @@ class MyCoreDataOperationConfiguration {
     
     func modelPath(_ mPath: String) -> MyCoreDataOperationConfiguration {
         modelPath = mPath
+        return self
+    }
+    
+    func managedObjectModel(_ momodel: NSManagedObjectModel) -> MyCoreDataOperationConfiguration {
+        managedObjectModel = momodel
         return self
     }
     

@@ -22,7 +22,6 @@
 		18AE454321A1862B0036199C /* MyRequestOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453321A151630036199C /* MyRequestOperation.swift */; };
 		18AE454521A186320036199C /* MyDataManager.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453C21A170350036199C /* MyDataManager.xcdatamodeld */; };
 		18AE454721A1863B0036199C /* MyAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453621A151630036199C /* MyAlert.swift */; };
-		18AE454821A1BA5B0036199C /* MyCoreDataOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE453221A151630036199C /* MyCoreDataOperation.swift */; };
 		18AE455B21A1C2B40036199C /* Category+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE455721A1C2B40036199C /* Category+CoreDataProperties.swift */; };
 		18AE455C21A1C2B40036199C /* Category+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE455721A1C2B40036199C /* Category+CoreDataProperties.swift */; };
 		18AE455D21A1C2B40036199C /* Movie+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AE455821A1C2B40036199C /* Movie+CoreDataProperties.swift */; };
@@ -715,7 +714,6 @@
 				1AC1B523221C0C5000A08E0F /* UIBarButtonItemExtension.swift in Sources */,
 				1AC1B51E221C0C5000A08E0F /* FloatExtension.swift in Sources */,
 				1AC1B52A221C0C5000A08E0F /* DictionaryExtension.swift in Sources */,
-				18AE454821A1BA5B0036199C /* MyCoreDataOperation.swift in Sources */,
 				1AC1B529221C0C5000A08E0F /* CodableExtension.swift in Sources */,
 				18B256FD21A716E200E9DB1B /* CategoryTableViewCell.swift in Sources */,
 				1AC1B525221C0C5000A08E0F /* UIDeviceExtension.swift in Sources */,
