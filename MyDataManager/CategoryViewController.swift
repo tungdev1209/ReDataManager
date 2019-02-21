@@ -52,7 +52,7 @@ class CategoryViewController: UIViewController {
                 .executeFetch(Category.self)
                 { [weak self] (_, cats) in
                     guard let `self` = self else {return}
-                    guard let cat = cats?.first else {return}
+                    guard let cat = cats.first else {return}
                     self.title = cat.subTitle
             }
         }
@@ -77,7 +77,7 @@ class CategoryViewController: UIViewController {
             .predicate(NSPredicate(format: "%K == %@", #keyPath(Category.title), catTitle))
             .executeFetch(Category.self, completion: { [weak self] (operation, cats) in
                 guard let `self` = self else {return}
-                guard let cat = operation.createObjectIfNeeded(cats?.first) else {return}
+                guard let cat = operation.createObjectIfNeeded(cats.first) else {return}
                 DispatchQueue.main.sync {
                     cat.subTitle = self.titleTf.text
                 }

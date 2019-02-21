@@ -284,13 +284,13 @@ class MyCoreDataOperation {
     }
     
     // MARK: Fetch
-    func executeFetch(_ entityName: String, completion: ((MyCoreDataOperation, [NSManagedObject]?) -> Void)?) {
+    func executeFetch(_ entityName: String, completion: ((MyCoreDataOperation, [NSManagedObject]) -> Void)?) {
         guard let _ = context else {return}
         
         // cache this operation
         MyCoreDataManager.shared.cacheOperation(self)
         
-        var result: [NSManagedObject]?
+        var result = [NSManagedObject]()
         
         MyCoreDataManager.shared.execute({ [weak self] in
             guard let `self` = self else {return}
@@ -299,7 +299,7 @@ class MyCoreDataOperation {
                 guard let `self` = self else {return}
                 
                 do {
-                    result = try self.context?.fetch(self.getFetchRequest(entityName)) as? [NSManagedObject]
+                    result = try self.context?.fetch(self.getFetchRequest(entityName)) as? [NSManagedObject] ?? []
                 }
                 catch {
                     print("Failed to fetch \(entityName) - error: \(error)")
@@ -333,9 +333,9 @@ class MyCoreDataOperation {
         }
     }
     
-    func executeFetch<T: NSManagedObject>(_ entityClass: T.Type, completion: ((MyCoreDataOperation, [T]?) -> Void)?) {
+    func executeFetch<T: NSManagedObject>(_ entityClass: T.Type, completion: ((MyCoreDataOperation, [T]) -> Void)?) {
         executeFetch(String(describing: T.self)) { (op, objects) in
-            completion?(op, objects as? [T])
+            completion?(op, objects as? [T] ?? [])
         }
     }
     

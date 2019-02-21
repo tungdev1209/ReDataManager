@@ -168,7 +168,7 @@ class MyCoreDataObjectLifeCycleTestsAsynchronously {
             expectation.fulfill()
         }
         
-        let result = XCTWaiter().wait(for: [expectation], timeout: 1.0)
+        let result = XCTWaiter().wait(for: [expectation], timeout: 10.0)
         XCTAssertTrue(result == .completed)
     }
     
@@ -177,9 +177,9 @@ class MyCoreDataObjectLifeCycleTestsAsynchronously {
         operation.fetchLimit(1)
             .predicate(NSPredicate(format: "%K == %@", #keyPath(Category.title), "Test1"))
             .executeFetch(String(describing: Category.self)) { (_, cats) in
-                XCTAssertEqual(cats?.count, 1)
+                XCTAssertEqual(cats.count, 1)
                 
-                let title = cats?.first?.value(forKey: #keyPath(Category.title)) as? String
+                let title = cats.first?.value(forKey: #keyPath(Category.title)) as? String
                 XCTAssertEqual(title, "Test1")
                 
                 expectationCat.fulfill()
@@ -188,20 +188,27 @@ class MyCoreDataObjectLifeCycleTestsAsynchronously {
         let expectationMov = XCTestExpectation(description: "Movie Fetched")
         operation.predicate(nil)
             .executeFetch(String(describing: Movie.self)) { (_, movs) in
-                let title = movs?.first?.value(forKey: #keyPath(Movie.title)) as? String
+                let title = movs.first?.value(forKey: #keyPath(Movie.title)) as? String
                 XCTAssertEqual(title, "GOT")
                 
                 expectationMov.fulfill()
         }
         
-        let result = XCTWaiter().wait(for: [expectationCat, expectationMov], timeout: 1.0)
+        let result = XCTWaiter().wait(for: [expectationCat, expectationMov], timeout: 10.0)
         XCTAssertTrue(result == .completed)
     }
     
     func delete() {
+        var needCheck = false
+        
         let expectationCat = XCTestExpectation(description: "Category Fetched")
         operation.executeFetch(String(describing: Category.self)) { (op, cats) in
-            guard let cats = cats else {return}
+            guard cats.count > 0 else {
+                expectationCat.fulfill()
+                return
+            }
+            needCheck = true
+            
             for cat in cats {
                 op.executeDelete(cat)
             }
@@ -212,21 +219,51 @@ class MyCoreDataObjectLifeCycleTestsAsynchronously {
             })
         }
         
-        var exps = [expectationCat]
-        operation.executeFetch(String(describing: Movie.self)) { (op, movs) in
-            guard let movs = movs else {return}
-            for mov in movs {
-                let exp = XCTestExpectation(description: "Movie Fetched")
+        var movies = [NSManagedObject]()
+        let expectationMov = XCTestExpectation(description: "Movie Fetched")
+        let fetchMovOperation = operation
+        fetchMovOperation.executeFetch(String(describing: Movie.self)) { (_, movs) in
+            movies = movs
+            expectationMov.fulfill()
+        }
+        
+        let result = XCTWaiter().wait(for: [expectationCat, expectationMov], timeout: 10.0)
+        XCTAssertTrue(result == .completed)
+        
+        if movies.count > 0 {
+            needCheck = true
+            
+            var exps = [XCTestExpectation]()
+            for mov in movies {
+                let exp = XCTestExpectation(description: "Movie Deleted")
                 exps.append(exp)
-                op.executeDelete(mov, save: true, completion: { (_, error) in
+                fetchMovOperation.executeDelete(mov, save: true, completion: { (_, error) in
                     XCTAssertNil(error)
                     exp.fulfill()
                 })
             }
+            
+            let movResult = XCTWaiter().wait(for: exps, timeout: 10.0)
+            XCTAssertTrue(movResult == .completed)
         }
         
-        let result = XCTWaiter().wait(for: exps, timeout: 10.0)
-        XCTAssertTrue(result == .completed)
+        guard needCheck else {return}
+        
+        // Check
+        let expCat = XCTestExpectation(description: "Category Fetched")
+        operation.executeFetch(String(describing: Category.self)) { (_, cats) in
+            XCTAssertEqual(cats.count, 0)
+            expCat.fulfill()
+        }
+        
+        let expMov = XCTestExpectation(description: "Movie Fetched")
+        operation.executeFetch(String(describing: Movie.self)) { (_, movs) in
+            XCTAssertEqual(movs.count, 0)
+            expMov.fulfill()
+        }
+        
+        let resultCheck = XCTWaiter().wait(for: [expCat, expMov], timeout: 10.0)
+        XCTAssertTrue(resultCheck == .completed)
     }
 }
 
@@ -258,19 +295,19 @@ class MyCoreDataObjectLifeCycleTests {
     
     func fetch() {
         operation.executeFetch(String(describing: Category.self)) { (_, cats) in
-            let title = cats?.first?.value(forKey: #keyPath(Category.title)) as? String
+            let title = cats.first?.value(forKey: #keyPath(Category.title)) as? String
             XCTAssertEqual(title, "Test")
         }
         
         operation.executeFetch(String(describing: Movie.self)) { (_, movs) in
-            let title = movs?.first?.value(forKey: #keyPath(Movie.title)) as? String
+            let title = movs.first?.value(forKey: #keyPath(Movie.title)) as? String
             XCTAssertEqual(title, "GOT")
         }
     }
     
     func delete() {
         operation.executeFetch(String(describing: Category.self)) { (op, cats) in
-            guard let cats = cats else {return}
+            guard cats.count > 0 else {return}
             for cat in cats {
                 op.executeDelete(cat)
             }
@@ -280,7 +317,7 @@ class MyCoreDataObjectLifeCycleTests {
         }
         
         operation.executeFetch(String(describing: Movie.self)) { (op, movs) in
-            guard let movs = movs else {return}
+            guard movs.count > 0 else {return}
             for mov in movs {
                 op.executeDelete(mov, save: true, completion: { (_, error) in
                     XCTAssertNil(error)
