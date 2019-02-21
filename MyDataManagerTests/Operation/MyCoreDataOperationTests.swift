@@ -66,10 +66,10 @@ class MyCoreDataLifeCycleTests: XCTestCase {
 
 }
 
-class MyCoreDataSaveExecutionTests: XCTestCase {
+class MyCoreDataExecutionTests: XCTestCase {
     
-    var operation: MyCoreDataOperation!
-    var tempObject: NSManagedObject?
+    var tests: MyCoreDataObjectLifeCycleTests?
+    var asyncTests: MyCoreDataObjectLifeCycleTestsAsynchronously?
     
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
@@ -82,35 +82,210 @@ class MyCoreDataSaveExecutionTests: XCTestCase {
         { (error) in
             print("Did startup - \(error == nil)")
         }
-        
-        operation = MyCoreDataOperation(.Main).shouldRequestAsynchronously(false)
     }
     
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
         
-        if let obj = tempObject {
-            operation.executeDelete(obj, save: true) { (_, error) in
-                print("Did reset all testing memory - \(String(describing: error?.toString()))")
-            }
-        }
+        tests?.delete()
+        
+        _ = asyncTests?.operation.shouldRequestAsynchronously(false)
+        asyncTests?.delete()
         
         MyCoreDataOperation.unload()
     }
     
-    func testSave() {
-        var err: MyCoreDataError?
-        operation.operating({ [weak self] (op) in
-            guard let `self` = self else {return}
-            self.tempObject = NSEntityDescription.insertNewObject(forEntityName: "Category", into: op.context!)
-            self.tempObject?.setValue("Test", forKey: "title")
-            self.tempObject?.setValue("Testing...", forKey: "subTitle")
-            print(self.tempObject)
-        }).executeSave { (_, error) in
-            print("Did save - \(error == nil)")
-            err = error
-        }
-        XCTAssertTrue(err == nil)
+    func testMainContext() {
+        tests = MyCoreDataObjectLifeCycleTests()
+        tests?.operationMode = .Main
+        tests?.run()
     }
     
+    func testBackgroundContext() {
+        tests = MyCoreDataObjectLifeCycleTests()
+        tests?.operationMode = .Background
+        tests?.run()
+    }
+    
+    func testBackgroundScopedContext() {
+        tests = MyCoreDataObjectLifeCycleTests()
+        tests?.operationMode = .BackgroundScoped
+        tests?.run()
+    }
+    
+    func testMainContextAsync() {
+        asyncTests = MyCoreDataObjectLifeCycleTestsAsynchronously()
+        asyncTests?.operationMode = .Main
+        asyncTests?.run()
+    }
+    
+    func testBackgroundContextAsync() {
+        asyncTests = MyCoreDataObjectLifeCycleTestsAsynchronously()
+        asyncTests?.operationMode = .Background
+        asyncTests?.run()
+    }
+    
+    func testBackgroundScopedContextAsync() {
+        asyncTests = MyCoreDataObjectLifeCycleTestsAsynchronously()
+        asyncTests?.operationMode = .BackgroundScoped
+        asyncTests?.run()
+    }
+}
+
+class MyCoreDataObjectLifeCycleTestsAsynchronously {
+    
+    var operationMode = MyCoreDataMode.Unknown
+    var operation: MyCoreDataOperation {
+        return MyCoreDataOperation(operationMode)
+    }
+    
+    func run() {
+        save()
+        fetch()
+        delete()
+    }
+    
+    func save() {
+        let expectation = XCTestExpectation(description: "Saved")
+        operation.operating({ (op) in
+            var category = NSEntityDescription.insertNewObject(forEntityName: String(describing: Category.self), into: op.context!)
+            category.setValue("Test", forKey: #keyPath(Category.title))
+            category.setValue("Testing...", forKey: #keyPath(Category.subTitle))
+            
+            category = NSEntityDescription.insertNewObject(forEntityName: String(describing: Category.self), into: op.context!)
+            category.setValue("Test1", forKey: #keyPath(Category.title))
+            category.setValue("Testing1...", forKey: #keyPath(Category.subTitle))
+            
+            category = NSEntityDescription.insertNewObject(forEntityName: String(describing: Category.self), into: op.context!)
+            category.setValue("Test1", forKey: #keyPath(Category.title))
+            category.setValue("Testing2...", forKey: #keyPath(Category.subTitle))
+            
+            let movie = NSEntityDescription.insertNewObject(forEntityName: String(describing: Movie.self), into: op.context!)
+            movie.setValue("GOT", forKey: #keyPath(Movie.title))
+        }).executeSave { (_, error) in
+            XCTAssertTrue(error == nil)
+            
+            expectation.fulfill()
+        }
+        
+        let result = XCTWaiter().wait(for: [expectation], timeout: 1.0)
+        XCTAssertTrue(result == .completed)
+    }
+    
+    func fetch() {
+        let expectationCat = XCTestExpectation(description: "Category Fetched")
+        operation.fetchLimit(1)
+            .predicate(NSPredicate(format: "%K == %@", #keyPath(Category.title), "Test1"))
+            .executeFetch(String(describing: Category.self)) { (_, cats) in
+                XCTAssertEqual(cats?.count, 1)
+                
+                let title = cats?.first?.value(forKey: #keyPath(Category.title)) as? String
+                XCTAssertEqual(title, "Test1")
+                
+                expectationCat.fulfill()
+        }
+        
+        let expectationMov = XCTestExpectation(description: "Movie Fetched")
+        operation.predicate(nil)
+            .executeFetch(String(describing: Movie.self)) { (_, movs) in
+                let title = movs?.first?.value(forKey: #keyPath(Movie.title)) as? String
+                XCTAssertEqual(title, "GOT")
+                
+                expectationMov.fulfill()
+        }
+        
+        let result = XCTWaiter().wait(for: [expectationCat, expectationMov], timeout: 1.0)
+        XCTAssertTrue(result == .completed)
+    }
+    
+    func delete() {
+        let expectationCat = XCTestExpectation(description: "Category Fetched")
+        operation.executeFetch(String(describing: Category.self)) { (op, cats) in
+            guard let cats = cats else {return}
+            for cat in cats {
+                op.executeDelete(cat)
+            }
+            op.executeSave({ (_, error) in
+                XCTAssertNil(error)
+                
+                expectationCat.fulfill()
+            })
+        }
+        
+        var exps = [expectationCat]
+        operation.executeFetch(String(describing: Movie.self)) { (op, movs) in
+            guard let movs = movs else {return}
+            for mov in movs {
+                let exp = XCTestExpectation(description: "Movie Fetched")
+                exps.append(exp)
+                op.executeDelete(mov, save: true, completion: { (_, error) in
+                    XCTAssertNil(error)
+                    exp.fulfill()
+                })
+            }
+        }
+        
+        let result = XCTWaiter().wait(for: exps, timeout: 10.0)
+        XCTAssertTrue(result == .completed)
+    }
+}
+
+class MyCoreDataObjectLifeCycleTests {
+    
+    var operationMode = MyCoreDataMode.Unknown
+    var operation: MyCoreDataOperation {
+        return MyCoreDataOperation(operationMode).shouldRequestAsynchronously(false)
+    }
+    
+    func run() {
+        save()
+        fetch()
+        delete()
+    }
+    
+    func save() {
+        operation.operating({ (op) in
+            let category = NSEntityDescription.insertNewObject(forEntityName: String(describing: Category.self), into: op.context!)
+            category.setValue("Test", forKey: #keyPath(Category.title))
+            category.setValue("Testing...", forKey: #keyPath(Category.subTitle))
+            
+            let movie = NSEntityDescription.insertNewObject(forEntityName: String(describing: Movie.self), into: op.context!)
+            movie.setValue("GOT", forKey: #keyPath(Movie.title))
+        }).executeSave { (_, error) in
+            XCTAssertTrue(error == nil)
+        }
+    }
+    
+    func fetch() {
+        operation.executeFetch(String(describing: Category.self)) { (_, cats) in
+            let title = cats?.first?.value(forKey: #keyPath(Category.title)) as? String
+            XCTAssertEqual(title, "Test")
+        }
+        
+        operation.executeFetch(String(describing: Movie.self)) { (_, movs) in
+            let title = movs?.first?.value(forKey: #keyPath(Movie.title)) as? String
+            XCTAssertEqual(title, "GOT")
+        }
+    }
+    
+    func delete() {
+        operation.executeFetch(String(describing: Category.self)) { (op, cats) in
+            guard let cats = cats else {return}
+            for cat in cats {
+                op.executeDelete(cat)
+            }
+            op.executeSave({ (_, error) in
+                XCTAssertNil(error)
+            })
+        }
+        
+        operation.executeFetch(String(describing: Movie.self)) { (op, movs) in
+            guard let movs = movs else {return}
+            for mov in movs {
+                op.executeDelete(mov, save: true, completion: { (_, error) in
+                    XCTAssertNil(error)
+                })
+            }
+        }
+    }
 }

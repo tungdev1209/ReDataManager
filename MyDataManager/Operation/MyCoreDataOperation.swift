@@ -96,8 +96,8 @@ class MyCoreDataOperation {
         return context
     }
     
-    private func getFetchRequest<T: NSManagedObject>(_ entityClass: T.Type) -> NSFetchRequest<NSFetchRequestResult> {
-        let fetch = entityClass.fetchRequest()
+    private func getFetchRequest(_ entityName: String) -> NSFetchRequest<NSFetchRequestResult> {
+        let fetch = NSFetchRequest<NSFetchRequestResult>(entityName: entityName)
         fetch.predicate = predicate
         fetch.sortDescriptors = sortDescriptors
         fetch.returnsObjectsAsFaults = returnsObjectsAsFaults
@@ -116,7 +116,7 @@ class MyCoreDataOperation {
     }
     
     private func getBatchDeleteRequest<T: NSManagedObject>(_ entityClass: T.Type) -> NSBatchDeleteRequest {
-        let request = NSBatchDeleteRequest(fetchRequest: getFetchRequest(entityClass))
+        let request = NSBatchDeleteRequest(fetchRequest: getFetchRequest(String(describing: T.self)))
         request.resultType = NSBatchDeleteRequestResultType.resultTypeObjectIDs
         return request
     }
@@ -284,43 +284,39 @@ class MyCoreDataOperation {
     }
     
     // MARK: Fetch
-    func executeFetch<T: NSManagedObject>(_ entityClass: T.Type, completion: ((MyCoreDataOperation, [T]?) -> Void)?) {
+    func executeFetch(_ entityName: String, completion: ((MyCoreDataOperation, [NSManagedObject]?) -> Void)?) {
         guard let _ = context else {return}
         
         // cache this operation
         MyCoreDataManager.shared.cacheOperation(self)
         
-        var result: [T]?
+        var result: [NSManagedObject]?
         
         MyCoreDataManager.shared.execute({ [weak self] in
             guard let `self` = self else {return}
             
-            var semaphore: DispatchSemaphore?
-            if let _ = self.context {
-                semaphore = DispatchSemaphore(value: 0)
-            }
-            
-            self.context?.perform { [weak self] in
+            let execution = { [weak self] in
                 guard let `self` = self else {return}
                 
-                print("\(self.context!.concurrencyType == NSManagedObjectContextConcurrencyType.privateQueueConcurrencyType)")
-                self.operating?(self)
-                
                 do {
-                    try self.context?.execute(NSAsynchronousFetchRequest.init(fetchRequest: self.getFetchRequest(entityClass)) { (fetchResult) in
-                        result = fetchResult.finalResult as? [T]
-                        semaphore?.signal()
-                    })
+                    result = try self.context?.fetch(self.getFetchRequest(entityName)) as? [NSManagedObject]
                 }
                 catch {
-                    print("Failed to fetch \(String(describing: T.self)) - error: \(error)")
-                    semaphore?.signal()
+                    print("Failed to fetch \(entityName) - error: \(error)")
                 }
             }
             
-            semaphore?.wait()
+            self.context?.performAndWait { [weak self] in
+                guard let `self` = self else {return}
+                
+                // execute operating closure
+                self.operating?(self)
+                
+                // execute fetch request
+                execution()
+            }
             
-            // for async request
+            // async completion
             if self.shouldRequestAsynchronously {
                 self.finalCompletion { [weak self] in
                     guard let `self` = self else {return}
@@ -330,10 +326,16 @@ class MyCoreDataOperation {
             }
         }, asynchronously: shouldRequestAsynchronously)
         
-        // for sync request
+        // sync completion
         if !shouldRequestAsynchronously {
             MyCoreDataManager.shared.removeOperation(self)
             completion?(self, result)
+        }
+    }
+    
+    func executeFetch<T: NSManagedObject>(_ entityClass: T.Type, completion: ((MyCoreDataOperation, [T]?) -> Void)?) {
+        executeFetch(String(describing: T.self)) { (op, objects) in
+            completion?(op, objects as? [T])
         }
     }
     
@@ -344,11 +346,6 @@ class MyCoreDataOperation {
         // cache this operation
         MyCoreDataManager.shared.cacheOperation(self)
         
-        var requestSemaphore: DispatchSemaphore?
-        if !shouldRequestAsynchronously {
-            requestSemaphore = DispatchSemaphore(value: 0)
-        }
-        
         var myError: MyCoreDataError?
         
         MyCoreDataManager.shared.execute({ [weak self] in
@@ -357,10 +354,8 @@ class MyCoreDataOperation {
             // prepare attributes
             self.propertiesToUpdate = propertiesToUpdate
             
-            self.context?.performAndWait { [weak self] in
+            let execution = { [weak self] in
                 guard let `self` = self else {return}
-                
-                self.operating?(self)
                 
                 do {
                     let result = try self.context?.execute(self.getBatchUpdateRequest(entityClass)) as? NSBatchUpdateResult
@@ -372,7 +367,14 @@ class MyCoreDataOperation {
                     myError = MyCoreDataError.UpdateObjectFail
                 }
             }
-            requestSemaphore?.signal()
+            
+            self.context?.performAndWait { [weak self] in
+                guard let `self` = self else {return}
+                
+                self.operating?(self)
+                
+                execution()
+            }
             
             // for async request
             if self.shouldRequestAsynchronously {
@@ -382,10 +384,9 @@ class MyCoreDataOperation {
                     completion?(self, myError)
                 }
             }
-        }, flags: .barrier)
+        }, flags: .barrier, asynchronously: shouldRequestAsynchronously)
         
         // for sync request
-        requestSemaphore?.wait()
         if !shouldRequestAsynchronously {
             MyCoreDataManager.shared.removeOperation(self)
             completion?(self, myError)
@@ -423,10 +424,8 @@ class MyCoreDataOperation {
         MyCoreDataManager.shared.execute({ [weak self] in
             guard let `self` = self else {return}
             
-            self.context?.performAndWait { [weak self] in
+            let execution = { [weak self] in
                 guard let `self` = self else {return}
-                
-                self.operating?(self)
                 
                 do {
                     let result = try self.context?.execute(self.getBatchDeleteRequest(entityClass)) as? NSBatchDeleteResult
@@ -437,6 +436,14 @@ class MyCoreDataOperation {
                     print("Failed to batch delete \(String(describing: T.self)) - error: \(error)")
                     myError = MyCoreDataError.DeleteObjectsFail
                 }
+            }
+            
+            self.context?.performAndWait { [weak self] in
+                guard let `self` = self else {return}
+                
+                self.operating?(self)
+                
+                execution()
             }
             
             // for async request
@@ -567,12 +574,18 @@ fileprivate class MyCoreDataStack {
     }()
     
     func unload() {
+        contextsQueue.sync { [weak self] in
+            guard let `self` = self else {return}
+            self.contexts.allObjects.forEach({ (context) in
+                context.automaticallyMergesChangesFromParent = false
+            })
+        }
         unloadStoreBlock?()
         unloadStoreBlock = nil
         protectStoreBlock?()
         protectStoreBlock = nil
-        backgroundContext = nil
         persistentContainer = nil
+        backgroundContext = nil
     }
     
     func loadPersistentContainer(_ configuration: MyCoreDataOperationConfiguration, completion: ((MyCoreDataError?) -> Void)?) {
