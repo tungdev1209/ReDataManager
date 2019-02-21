@@ -69,6 +69,7 @@ class MyCoreDataLifeCycleTests: XCTestCase {
 class MyCoreDataSaveExecutionTests: XCTestCase {
     
     var operation: MyCoreDataOperation!
+    var tempObject: NSManagedObject?
     
     override func setUp() {
         // Put setup code here. This method is called before the invocation of each test method in the class.
@@ -82,32 +83,33 @@ class MyCoreDataSaveExecutionTests: XCTestCase {
             print("Did startup - \(error == nil)")
         }
         
-        operation = MyCoreDataOperation(.Main)
+        operation = MyCoreDataOperation(.Main).shouldRequestAsynchronously(false)
     }
     
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
         
-        operation.shouldRequestAsynchronously(false)
-            .executeBatchDelete(Category.self) { (_, error) in
-            print("Did reset all testing memory")
+        if let obj = tempObject {
+            operation.executeDelete(obj, save: true) { (_, error) in
+                print("Did reset all testing memory - \(String(describing: error?.toString()))")
+            }
         }
+        
         MyCoreDataOperation.unload()
     }
     
     func testSave() {
-        let exp = expectation(description: "coredata startup")
         var err: MyCoreDataError?
-        operation.operating({ (op) in
-            let cat = NSEntityDescription.insertNewObject(forEntityName: "Category", into: op.context!) as? Category
-            cat?.title = "Test"
-            cat?.subTitle = "Testing..."
+        operation.operating({ [weak self] (op) in
+            guard let `self` = self else {return}
+            self.tempObject = NSEntityDescription.insertNewObject(forEntityName: "Category", into: op.context!)
+            self.tempObject?.setValue("Test", forKey: "title")
+            self.tempObject?.setValue("Testing...", forKey: "subTitle")
+            print(self.tempObject)
         }).executeSave { (_, error) in
             print("Did save - \(error == nil)")
             err = error
-            exp.fulfill()
         }
-        waitForExpectations(timeout: 1.0, handler: nil)
         XCTAssertTrue(err == nil)
     }
     

@@ -246,11 +246,6 @@ class MyCoreDataOperation {
         // cache this operation
         MyCoreDataManager.shared.cacheOperation(self)
         
-        var requestSemaphore: DispatchSemaphore?
-        if !shouldRequestAsynchronously {
-            requestSemaphore = DispatchSemaphore(value: 0)
-        }
-        
         var myError: MyCoreDataError?
         
         MyCoreDataManager.shared.execute({ [weak self] in
@@ -270,7 +265,6 @@ class MyCoreDataOperation {
                     myError = MyCoreDataError.SaveObjectFail
                 }
             }
-            requestSemaphore?.signal()
             
             // for async request
             if self.shouldRequestAsynchronously {
@@ -280,9 +274,7 @@ class MyCoreDataOperation {
                     completion?(self, myError)
                 }
             }
-        }, flags: .barrier)
-        
-        requestSemaphore?.wait()
+        }, flags: .barrier, asynchronously: shouldRequestAsynchronously)
         
         // for sync request
         if !shouldRequestAsynchronously {
@@ -297,11 +289,6 @@ class MyCoreDataOperation {
         
         // cache this operation
         MyCoreDataManager.shared.cacheOperation(self)
-        
-        var requestSemaphore: DispatchSemaphore?
-        if !shouldRequestAsynchronously {
-            requestSemaphore = DispatchSemaphore(value: 0)
-        }
         
         var result: [T]?
         
@@ -332,7 +319,6 @@ class MyCoreDataOperation {
             }
             
             semaphore?.wait()
-            requestSemaphore?.signal()
             
             // for async request
             if self.shouldRequestAsynchronously {
@@ -342,10 +328,9 @@ class MyCoreDataOperation {
                     completion?(self, result)
                 }
             }
-        })
+        }, asynchronously: shouldRequestAsynchronously)
         
         // for sync request
-        requestSemaphore?.wait()
         if !shouldRequestAsynchronously {
             MyCoreDataManager.shared.removeOperation(self)
             completion?(self, result)
@@ -433,11 +418,6 @@ class MyCoreDataOperation {
         // cache this operation
         MyCoreDataManager.shared.cacheOperation(self)
         
-        var requestSemaphore: DispatchSemaphore?
-        if !shouldRequestAsynchronously {
-            requestSemaphore = DispatchSemaphore(value: 0)
-        }
-        
         var myError: MyCoreDataError?
         
         MyCoreDataManager.shared.execute({ [weak self] in
@@ -458,7 +438,6 @@ class MyCoreDataOperation {
                     myError = MyCoreDataError.DeleteObjectsFail
                 }
             }
-            requestSemaphore?.signal()
             
             // for async request
             if self.shouldRequestAsynchronously {
@@ -468,10 +447,9 @@ class MyCoreDataOperation {
                     completion?(self, myError)
                 }
             }
-        }, flags: .barrier)
+        }, flags: .barrier, asynchronously: shouldRequestAsynchronously)
         
         // for sync request
-        requestSemaphore?.wait()
         if !shouldRequestAsynchronously {
             MyCoreDataManager.shared.removeOperation(self)
             completion?(self, myError)
@@ -532,42 +510,40 @@ fileprivate class MyCoreDataManager {
     }
     
     func execute(_ executing: (() -> Void)?, asynchronously: Bool = true) {
-        var semaphore: DispatchSemaphore?
-        if !asynchronously {
-            semaphore = DispatchSemaphore(value: 0)
-        }
-        executionQueue.async { [weak self] in
-            defer {
-                semaphore?.signal()
-            }
-            
+        let execution = { [weak self] in
             guard let `self` = self else {return}
             guard self.isExecutable() else {return}
             
             executing?()
         }
-        if !asynchronously {
-            semaphore?.wait()
+        if asynchronously {
+            executionQueue.async {
+                execution()
+            }
+        }
+        else {
+            executionQueue.sync {
+                execution()
+            }
         }
     }
     
     func execute(_ executing: (() -> Void)?, flags: DispatchWorkItemFlags, asynchronously: Bool = true) {
-        var semaphore: DispatchSemaphore?
-        if !asynchronously {
-            semaphore = DispatchSemaphore(value: 0)
-        }
-        executionQueue.async(flags: flags) { [weak self] in
-            defer {
-                semaphore?.signal()
-            }
-            
+        let execution = { [weak self] in
             guard let `self` = self else {return}
             guard self.isExecutable() else {return}
-            
             executing?()
         }
-        if !asynchronously {
-            semaphore?.wait()
+        
+        if asynchronously {
+            executionQueue.async(flags: flags) {
+                execution()
+            }
+        }
+        else {
+            executionQueue.sync(flags: flags) {
+                execution()
+            }
         }
     }
 }
