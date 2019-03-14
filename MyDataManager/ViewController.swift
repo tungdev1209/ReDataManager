@@ -27,6 +27,18 @@ class ViewController: UIViewController {
         title = "Main"
         
         MyKeychainService.shared.configuration = MyKeyChainConfiguration()
+        
+        testUI()
+    }
+    
+    var source: DispatchSourceSignal?
+    func testUI() {
+        source = DispatchSource.makeSignalSource(signal: SIGSTOP, queue: DispatchQueue.main)
+        source?.setEventHandler { [weak self] in
+            guard let strongSelf = self else {return}
+            print("Hi, I am: \(strongSelf)")
+        }
+        source?.resume()
     }
 }
 

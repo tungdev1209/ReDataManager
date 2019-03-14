@@ -6,7 +6,7 @@ target 'MyDataManager' do
   use_frameworks!
 
   # Pods for MyDataManager
-  pod 'RealmSwift'
+  pod 'RxSwift'
 
   target 'MyDataManagerTests' do
     inherit! :search_paths
