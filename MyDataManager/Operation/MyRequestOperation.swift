@@ -11,12 +11,39 @@ import UIKit
 enum RequestMethod: String {
     case GET = "GET"
     case POST = "POST"
+    case PUT = "PUT"
 }
 
 enum ImageType {
     case PNG
-    case JPEG
+    case JPEG(_ quality: CGFloat)
     case Unknown
+    
+    var rawValue: String {
+        switch self {
+        case .PNG:
+            return "PNG"
+            
+        case .JPEG(_):
+            return "JPEG"
+            
+        default:
+            return ""
+        }
+    }
+    
+    var mimeType: String {
+        switch self {
+        case .JPEG(_):
+            return "image/jpeg"
+            
+        case .PNG:
+            return "image/png"
+            
+        default:
+            return ""
+        }
+    }
 }
 
 enum MyError: Error {
@@ -27,19 +54,81 @@ enum MyError: Error {
     case None
 }
 
-class HeaderField {
-    static let ContentType = "Content-Type"
-    static let Authorization = "Authorization"
+enum HeaderValue {
+    case Bearer(_ token: String)
+    case AppJSON
+    case Multipart(_ boundary: String)
+    case FormUrlencoded
+    
+    var value: String {
+        switch self {
+        case let .Bearer(token):
+            return "bearer \(token)"
+            
+        case .AppJSON:
+            return "application/json"
+            
+        case .FormUrlencoded:
+            return "application/x-www-form-urlencoded"
+            
+        case let .Multipart(boundary):
+            return "multipart/form-data; boundary=\(boundary)"
+        }
+    }
 }
 
-class HeaderValue {
-    static let MultiPart_FormData = "multipart/form-data"
-    static let Application_JSON = "application/json"
-    static let CharacterSet_UTF8 = "charset=utf-8"
+enum HeaderKey {
+    case Authorization(_ value: HeaderValue)
+    case ContentType(_ value: HeaderValue)
+    case Accept(_ value: HeaderValue)
+    case None
+    
+    var value: [String: String] {
+        switch self {
+        case let .Authorization(type):
+            return ["Authorization": type.value]
+            
+        case let .ContentType(type):
+            return ["Content-Type" : type.value]
+            
+        case let .Accept(type):
+            return ["Accept" : type.value]
+            
+        default:
+            return [:]
+        }
+    }
+}
+
+extension Dictionary {
+    mutating func merge(dict: [Key: Value]) {
+        for (k, v) in dict {
+            updateValue(v, forKey: k)
+        }
+    }
+}
+
+class Header {
+    var headers = [String: String]()
+    func add(_ type: HeaderKey) -> Header {
+        headers.merge(dict: type.value)
+        return self
+    }
+    
+    func remove(_ type: HeaderKey) -> Header {
+        if let key = type.value.keys.first {
+            headers.removeValue(forKey: key)
+        }
+        return self
+    }
+    
+    var value: [String: String] {
+        return headers
+    }
 }
 
 class MyRequestOperation {
-    var sessionConfiguration: URLSessionConfiguration = .ephemeral
+    var sessionConfiguration = URLSessionConfiguration.ephemeral
     var sessionDelegate: URLSessionDelegate?
     var sessionDelegateQueue: OperationQueue?
     var requestMethod = RequestMethod.GET
@@ -47,7 +136,7 @@ class MyRequestOperation {
     var timeout = 60.0
     var secondaryTimeout = 30.0
     var headers = [String: String]()
-    var postBody: Any?
+    var postBody: Data?
     var retryTimes = 3
     var shouldRequestAsynchronously = true
     
@@ -61,15 +150,14 @@ class MyRequestOperation {
     private var synchronousRequestSemaphore: DispatchSemaphore?
     private var responseData: Data?
     
-    fileprivate let _id = NSUUID.createBaseTime()
+    fileprivate let _id = UUID().uuidString
     typealias MyRequestCompletion = ((Data?, [Error]?, MyRequestOperation) -> Void)
     
     convenience init(_ url: String) {
         self.init()
         if let anURL = URL(string: url) {
             urlRequest = URLRequest(url: anURL, cachePolicy: cachePolicy, timeoutInterval: timeout)
-        }
-        else {
+        } else {
             appendError(MyError.InvalidUrl)
         }
     }
@@ -138,14 +226,7 @@ class MyRequestOperation {
         return self
     }
     
-    func postImage(_ imageData: MyImageData) -> MyRequestOperation {
-        guard postBody == nil else {return self}
-        postBody = imageData
-        return self
-    }
-    
     func postData(_ data: Data?) -> MyRequestOperation {
-        guard postBody == nil else {return self}
         postBody = data
         return self
     }
@@ -190,17 +271,7 @@ class MyRequestOperation {
         }
         
         // add post body
-        if let body = postBody as? Data {
-            urlRequest?.httpBody = body
-        }
-        else if let imageData = postBody as? MyImageData {
-            imageData.execute()
-            let _ = headers(imageData.headersAttachment)
-            urlRequest?.httpBody = imageData.data
-            if imageData.error != .None {
-                appendError(imageData.error)
-            }
-        }
+        urlRequest?.httpBody = postBody
         
         // add other fields
         urlRequest?.cachePolicy = cachePolicy
@@ -229,30 +300,30 @@ class MyRequestOperation {
     private func executeRequest(_ completion: MyRequestCompletion?) {
         let session = createSession()
         session.dataTask(with: urlRequest!, completionHandler: { [weak self] (data, response, error) in
-            guard let `self` = self else { return }
+            guard let _self = self else { return }
             if let _ = error {
-                if self.retryTimes > 0 {
+                if _self.retryTimes > 0 {
                     session.finishTasksAndInvalidate()
-                    self.retryTimes = self.retryTimes - 1
-                    self.urlRequest?.timeoutInterval = self.secondaryTimeout
-                    self.executeRequest(completion)
+                    _self.retryTimes = _self.retryTimes - 1
+                    _self.urlRequest?.timeoutInterval = _self.secondaryTimeout
+                    _self.executeRequest(completion)
                     return
                 }
                 else {
-                    self.appendError(error!)
+                    _self.appendError(error!)
                 }
             }
-            self.responseData = data
-            self.response = response
+            _self.responseData = data
+            _self.response = response
             session.finishTasksAndInvalidate()
             
-            if !self.shouldRequestAsynchronously {
-                self.synchronousRequestSemaphore?.signal()
+            if !_self.shouldRequestAsynchronously {
+                _self.synchronousRequestSemaphore?.signal()
             }
             else {
                 // for async request
-                MyRequestManager.shared.removeOperation(self)
-                completion?(self.responseData, self.errors, self)
+                MyRequestManager.shared.removeOperation(_self)
+                completion?(_self.responseData, _self.errors, _self)
             }
         }).resume()
     }
@@ -262,88 +333,110 @@ class MyRequestOperation {
     }
 }
 
-class MyImageData {
-    var boundary = "Boundary-\(UUID().uuidString)"
-    var name = "image"
-    var headersAttachment = [String: String]()
+class MyAttachment {
+    var boundary = UUID().uuidString
     
-    private(set) var image: UIImage!
-    private(set) var mimeType = ""
-    private(set) var data: Data?
-    private(set) var error = MyError.None
-    private(set) var type = ImageType.Unknown {
-        didSet {
+    private enum AttachmentType {
+        case File(_ path: String)
+        case FileData(_ data: Data?)
+        case Image(_ image: UIImage, type: ImageType)
+    }
+    
+    private struct Attachment {
+        var type = AttachmentType.File("")
+        var data: Data?
+        var fileExtension = ""
+        var fileName = ""
+        var field = ""
+        
+        init(_ attType: AttachmentType) {
+            type = attType
+            switch attType {
+            case let .Image(image, type: imgType):
+                fileExtension = imgType.rawValue.lowercased()
+                switch imgType {
+                case let .JPEG(quality):
+                    data = image.jpegData(compressionQuality: quality)
+                    
+                case .PNG:
+                    data = image.pngData()
+                    
+                default: break
+                }
+                
+            case let .FileData(d):
+                data = d
+                
+            case let .File(path):
+                let url = URL(fileURLWithPath: path)
+                fileExtension = url.lastPathComponent.components(separatedBy: ".").last.unwrap
+                fileName = url.lastPathComponent.components(separatedBy: ".").first.unwrap
+                data = try? Data(contentsOf: url)
+            }
+        }
+        
+        var fileFullName: String {
+            return fileName + ".\(fileExtension)"
+        }
+        
+        var contentType: String {
             switch type {
-            case .PNG:
-                mimeType = "image/png"
-            default:
-                mimeType = "image/jpeg"
+            case .FileData(_), .File(_):
+                return "application/" + fileExtension
+                
+            case let .Image(_, type: imgType):
+                return imgType.mimeType
             }
         }
     }
     
-    convenience init(_ uiImage: UIImage, imageType: ImageType) {
-        self.init()
-        image = uiImage
-        type = imageType
-    }
+    private(set) var error = MyError.None
+    private var attachments = [Attachment]()
     
-    func mimeType(_ mime: String) -> MyImageData {
-        mimeType = mime
+    func boundary(_ b: String) -> MyAttachment {
+        boundary = b
         return self
     }
     
-    func name(_ imageName: String) -> MyImageData {
-        name = imageName
+    func attach(image i: UIImage, imageName: String, imageType: ImageType, forField fieldName: String = "") -> MyAttachment {
+        var att = Attachment(.Image(i, type: imageType))
+        att.fileName = imageName
+        att.field = fieldName
+        attachments.append(att)
         return self
     }
     
-    func boundary(_ bound: String) -> MyImageData {
-        boundary = bound
+    func attach(filePath path: String, forField fieldName: String = "") -> MyAttachment {
+        var att = Attachment(.File(path))
+        att.field = fieldName
+        attachments.append(att)
         return self
     }
     
-    func headersAttachment(_ headers: [String: String]) -> MyImageData {
-        for field in headers.keys {
-            headersAttachment[field] = headers[field]
-        }
+    func attach(fileData f: Data, fileName: String, fileExtension: String, forField fieldName: String = "") -> MyAttachment {
+        var att = Attachment(.FileData(f))
+        att.fileName = fileName
+        att.fileExtension = fileExtension
+        att.field = fieldName
+        attachments.append(att)
         return self
     }
     
-    private func createBody(_ imageData: Data) -> Data {
+    private func createBody(_ attachment: Attachment) -> Data {
         var body = Data()
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition:form-data; name=\"attachment\"; filename=\"\(name)\"\r\n".data(using: .utf8)!)
-        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
-        body.append(imageData)
-        body.append("\r\n".data(using: .utf8)!)
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        body.append("--\(boundary)\r\n".asData.unwrap)
+        body.append("Content-Disposition:form-data; name=\"\(attachment.field)\"; filename=\"\(attachment.fileFullName)\"\r\n".asData.unwrap)
+        body.append("Content-Type: \(attachment.contentType)\r\n\r\n".asData.unwrap)
+        body.append(attachment.data.unwrap)
+        body.append("\r\n".asData.unwrap)
         return body
     }
     
-    func execute() {
-        headersAttachment[HeaderField.ContentType] = "\(HeaderValue.MultiPart_FormData); boundary=\(boundary)"
-        
-        switch type {
-        case .PNG:
-            guard let imageData = image.pngData() else {
-                print("== MyImageData:: Can not get data from png image ==")
-                error = .InvalidImageData
-                return
-            }
-            data = createBody(imageData)
-            
-        case .JPEG:
-            guard let imageData = image.jpegData(compressionQuality: 1) else {
-                print("== MyImageData:: Can not get data from jpeg image ==")
-                error = .InvalidImageData
-                return
-            }
-            data = createBody(imageData)
-            
-        default:
-            break
-        }
+    func execute() -> Data {
+        var finalData = Data()
+        attachments.forEach { finalData.append(createBody($0)) }
+        finalData.append("--\(boundary)--\r\n".asData.unwrap)
+        return finalData
     }
 }
 
@@ -353,15 +446,15 @@ fileprivate class MyRequestManager {
     let operationQueue = DispatchQueue.init(label: "com.myrequestmanager.operation")
     func cacheOperation(_ operation: MyRequestOperation) {
         operationQueue.sync { [weak self] in
-            guard let `self` = self else {return}
-            self.operations[operation._id] = operation
+            guard let _self = self else {return}
+            _self.operations[operation._id] = operation
         }
     }
     
     func removeOperation(_ operation: MyRequestOperation) {
         operationQueue.sync { [weak self] in
-            guard let `self` = self else {return}
-            self.operations.removeValue(forKey: operation._id)
+            guard let _self = self else {return}
+            _self.operations.removeValue(forKey: operation._id)
         }
     }
 }
@@ -376,7 +469,7 @@ class MyRequestConfiguration {
     var timeout = 60.0
     var secondaryTimeout = 30.0
     var headers = [String: String]()
-    var postBody: Any?
+    var postBody: Data?
     var retryTimes = 3
     var shouldRequestAsynchronously = true
     
@@ -427,14 +520,7 @@ class MyRequestConfiguration {
         return self
     }
     
-    func postImage(_ imageData: MyImageData) -> MyRequestConfiguration {
-        guard postBody == nil else {return self}
-        postBody = imageData
-        return self
-    }
-    
     func postData(_ data: Data?) -> MyRequestConfiguration {
-        guard postBody == nil else {return self}
         postBody = data
         return self
     }
@@ -442,5 +528,23 @@ class MyRequestConfiguration {
     func shouldRequestAsynchronously(_ requestAsync: Bool) -> MyRequestConfiguration {
         shouldRequestAsynchronously = requestAsync
         return self
+    }
+}
+
+extension Optional where Wrapped == Data {
+    var unwrap: Data {
+        return self ?? Data()
+    }
+}
+
+extension Optional where Wrapped == String {
+    var unwrap: String {
+        return self ?? ""
+    }
+}
+
+extension String {
+    var asData: Data? {
+        return data(using: .utf8)
     }
 }
