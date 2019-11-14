@@ -516,26 +516,7 @@ fileprivate class MyCoreDataManager {
         return loadPersistentSuccess
     }
     
-    func execute(_ executing: (() -> Void)?, asynchronously: Bool = true) {
-        let execution = { [weak self] in
-            guard let `self` = self else {return}
-            guard self.isExecutable() else {return}
-            
-            executing?()
-        }
-        if asynchronously {
-            executionQueue.async {
-                execution()
-            }
-        }
-        else {
-            executionQueue.sync {
-                execution()
-            }
-        }
-    }
-    
-    func execute(_ executing: (() -> Void)?, flags: DispatchWorkItemFlags, asynchronously: Bool = true) {
+    func execute(_ executing: (() -> Void)?, flags: DispatchWorkItemFlags = [], asynchronously: Bool = true) {
         let execution = { [weak self] in
             guard let `self` = self else {return}
             guard self.isExecutable() else {return}
