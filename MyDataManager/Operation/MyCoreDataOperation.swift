@@ -69,7 +69,7 @@ class MyCoreDataOperation {
     private(set) var context: NSManagedObjectContext?
     private(set) var mode = MyCoreDataMode.Unknown
     
-    fileprivate let _id = NSUUID.createBaseTime()
+    fileprivate let _id = UUID().uuidString
     
     convenience init(_ contextMode: MyCoreDataMode) {
         self.init()
@@ -81,8 +81,8 @@ class MyCoreDataOperation {
     private func getContext() -> NSManagedObjectContext? {
         var context: NSManagedObjectContext?
         MyCoreDataManager.shared.execute({ [weak self] in
-            guard let `self` = self else {return}
-            switch self.mode {
+            guard let _self = self else {return}
+            switch _self.mode {
             case .Background:
                 context = MyCoreDataStack.shared.backgroundManagedObjectContext(true)
                 
@@ -226,8 +226,8 @@ class MyCoreDataOperation {
     }
     
     func createObject<T: NSManagedObject>(_ entityClass: T.Type) -> T? {
-        if let _ = context {
-            return T(context: context!)
+        if let c = context {
+            return T(context: c)
         }
         return nil
     }
@@ -241,7 +241,7 @@ class MyCoreDataOperation {
     
     // MARK: Save
     func executeSave(_ completion: ((MyCoreDataOperation, MyCoreDataError?) -> Void)?) {
-        guard let _ = context else {return}
+        guard let c = context else {return}
         
         // cache this operation
         MyCoreDataManager.shared.cacheOperation(self)
@@ -249,16 +249,16 @@ class MyCoreDataOperation {
         var myError: MyCoreDataError?
         
         MyCoreDataManager.shared.execute({ [weak self] in
-            guard let `self` = self else {return}
+            guard let _self = self else {return}
             
-            self.context?.performAndWait { [weak self] in
-                guard let `self` = self else {return}
+            _self.context?.performAndWait { [weak self] in
+                guard let _self = self else {return}
                 
-                self.operating?(self)
+                _self.operating?(_self)
                 
-                guard let _ = self.context, self.context!.hasChanges else {return}
+                guard let _ = _self.context, c.hasChanges else {return}
                 do {
-                    try self.context?.save()
+                    try _self.context?.save()
                 }
                 catch {
                     print("Coredata - Failed to save - error: \(error)")
@@ -267,11 +267,11 @@ class MyCoreDataOperation {
             }
             
             // for async request
-            if self.shouldRequestAsynchronously {
-                self.finalCompletion { [weak self] in
-                    guard let `self` = self else {return}
-                    MyCoreDataManager.shared.removeOperation(self)
-                    completion?(self, myError)
+            if _self.shouldRequestAsynchronously {
+                _self.finalCompletion { [weak self] in
+                    guard let _self = self else {return}
+                    MyCoreDataManager.shared.removeOperation(_self)
+                    completion?(_self, myError)
                 }
             }
         }, flags: .barrier, asynchronously: shouldRequestAsynchronously)
@@ -293,35 +293,35 @@ class MyCoreDataOperation {
         var result = [NSManagedObject]()
         
         MyCoreDataManager.shared.execute({ [weak self] in
-            guard let `self` = self else {return}
+            guard let _self = self else {return}
             
             let execution = { [weak self] in
-                guard let `self` = self else {return}
+                guard let _self = self else {return}
                 
                 do {
-                    result = try self.context?.fetch(self.getFetchRequest(entityName)) as? [NSManagedObject] ?? []
+                    result = try _self.context?.fetch(_self.getFetchRequest(entityName)) as? [NSManagedObject] ?? []
                 }
                 catch {
                     print("Failed to fetch \(entityName) - error: \(error)")
                 }
             }
             
-            self.context?.performAndWait { [weak self] in
-                guard let `self` = self else {return}
+            _self.context?.performAndWait { [weak self] in
+                guard let _self = self else {return}
                 
                 // execute operating closure
-                self.operating?(self)
+                _self.operating?(_self)
                 
                 // execute fetch request
                 execution()
             }
             
             // async completion
-            if self.shouldRequestAsynchronously {
-                self.finalCompletion { [weak self] in
-                    guard let `self` = self else {return}
-                    MyCoreDataManager.shared.removeOperation(self)
-                    completion?(self, result)
+            if _self.shouldRequestAsynchronously {
+                _self.finalCompletion { [weak self] in
+                    guard let _self = self else {return}
+                    MyCoreDataManager.shared.removeOperation(_self)
+                    completion?(_self, result)
                 }
             }
         }, asynchronously: shouldRequestAsynchronously)
@@ -349,18 +349,18 @@ class MyCoreDataOperation {
         var myError: MyCoreDataError?
         
         MyCoreDataManager.shared.execute({ [weak self] in
-            guard let `self` = self else {return}
+            guard let _self = self else {return}
             
             // prepare attributes
-            self.propertiesToUpdate = propertiesToUpdate
+            _self.propertiesToUpdate = propertiesToUpdate
             
             let execution = { [weak self] in
-                guard let `self` = self else {return}
+                guard let _self = self else {return}
                 
                 do {
-                    let result = try self.context?.execute(self.getBatchUpdateRequest(entityClass)) as? NSBatchUpdateResult
+                    let result = try _self.context?.execute(_self.getBatchUpdateRequest(entityClass)) as? NSBatchUpdateResult
                     print("CoreData - Did batch update: \(String(describing: result))")
-                    MyCoreDataStack.shared.mergeChanges(result?.result as? [NSManagedObjectID], context: self.context)
+                    MyCoreDataStack.shared.mergeChanges(result?.result as? [NSManagedObjectID], context: _self.context)
                 }
                 catch {
                     print("Failed to batch update \(String(describing: T.self)) - error: \(error)")
@@ -368,20 +368,20 @@ class MyCoreDataOperation {
                 }
             }
             
-            self.context?.performAndWait { [weak self] in
-                guard let `self` = self else {return}
+            _self.context?.performAndWait { [weak self] in
+                guard let _self = self else {return}
                 
-                self.operating?(self)
+                _self.operating?(_self)
                 
                 execution()
             }
             
             // for async request
-            if self.shouldRequestAsynchronously {
-                self.finalCompletion { [weak self] in
-                    guard let `self` = self else {return}
-                    MyCoreDataManager.shared.removeOperation(self)
-                    completion?(self, myError)
+            if _self.shouldRequestAsynchronously {
+                _self.finalCompletion { [weak self] in
+                    guard let _self = self else {return}
+                    MyCoreDataManager.shared.removeOperation(_self)
+                    completion?(_self, myError)
                 }
             }
         }, flags: .barrier, asynchronously: shouldRequestAsynchronously)
@@ -422,15 +422,15 @@ class MyCoreDataOperation {
         var myError: MyCoreDataError?
         
         MyCoreDataManager.shared.execute({ [weak self] in
-            guard let `self` = self else {return}
+            guard let _self = self else {return}
             
             let execution = { [weak self] in
-                guard let `self` = self else {return}
+                guard let _self = self else {return}
                 
                 do {
-                    let result = try self.context?.execute(self.getBatchDeleteRequest(entityClass)) as? NSBatchDeleteResult
+                    let result = try _self.context?.execute(_self.getBatchDeleteRequest(entityClass)) as? NSBatchDeleteResult
                     print("CoreData - Did batch delete: \(String(describing: result))")
-                    MyCoreDataStack.shared.mergeChanges(result?.result as? [NSManagedObjectID], context: self.context)
+                    MyCoreDataStack.shared.mergeChanges(result?.result as? [NSManagedObjectID], context: _self.context)
                 }
                 catch {
                     print("Failed to batch delete \(String(describing: T.self)) - error: \(error)")
@@ -438,20 +438,20 @@ class MyCoreDataOperation {
                 }
             }
             
-            self.context?.performAndWait { [weak self] in
-                guard let `self` = self else {return}
+            _self.context?.performAndWait { [weak self] in
+                guard let _self = self else {return}
                 
-                self.operating?(self)
+                _self.operating?(_self)
                 
                 execution()
             }
             
             // for async request
-            if self.shouldRequestAsynchronously {
-                self.finalCompletion { [weak self] in
-                    guard let `self` = self else {return}
-                    MyCoreDataManager.shared.removeOperation(self)
-                    completion?(self, myError)
+            if _self.shouldRequestAsynchronously {
+                _self.finalCompletion { [weak self] in
+                    guard let _self = self else {return}
+                    MyCoreDataManager.shared.removeOperation(_self)
+                    completion?(_self, myError)
                 }
             }
         }, flags: .barrier, asynchronously: shouldRequestAsynchronously)
@@ -497,15 +497,15 @@ fileprivate class MyCoreDataManager {
     
     func cacheOperation(_ operation: MyCoreDataOperation) {
         operationQueue.sync { [weak self] in
-            guard let `self` = self else {return}
-            self.operations[operation._id] = operation
+            guard let _self = self else {return}
+            _self.operations[operation._id] = operation
         }
     }
     
     func removeOperation(_ operation: MyCoreDataOperation) {
         operationQueue.sync { [weak self] in
-            guard let `self` = self else {return}
-            self.operations.removeValue(forKey: operation._id)
+            guard let _self = self else {return}
+            _self.operations.removeValue(forKey: operation._id)
         }
     }
     
@@ -518,8 +518,8 @@ fileprivate class MyCoreDataManager {
     
     func execute(_ executing: (() -> Void)?, flags: DispatchWorkItemFlags = [], asynchronously: Bool = true) {
         let execution = { [weak self] in
-            guard let `self` = self else {return}
-            guard self.isExecutable() else {return}
+            guard let _self = self else {return}
+            guard _self.isExecutable() else {return}
             executing?()
         }
         
@@ -556,8 +556,8 @@ fileprivate class MyCoreDataStack {
     
     func unload() {
         contextsQueue.sync { [weak self] in
-            guard let `self` = self else {return}
-            self.contexts.allObjects.forEach({ (context) in
+            guard let _self = self else {return}
+            _self.contexts.allObjects.forEach({ (context) in
                 context.automaticallyMergesChangesFromParent = false
             })
         }
@@ -571,8 +571,8 @@ fileprivate class MyCoreDataStack {
     
     func loadPersistentContainer(_ configuration: MyCoreDataOperationConfiguration, completion: ((MyCoreDataError?) -> Void)?) {
         initializePersistentContainer(configuration) { [weak self] (error) in
-            guard let `self` = self else {return}
-            self.didInitializeContainer(error)
+            guard let _self = self else {return}
+            _self.didInitializeContainer(error)
             completion?(error)
         }
     }
@@ -614,12 +614,12 @@ fileprivate class MyCoreDataStack {
             let subFileSHM = appModelPathURL.appendingPathComponent(configuration.modelName + ".sqlite-shm")
             let subFileWAL = appModelPathURL.appendingPathComponent(configuration.modelName + ".sqlite-wal")
             protectStoreBlock = { [weak self] in
-                guard let `self` = self else {return}
-                if self.coredataFileManager.fileExists(atPath: storeDecPath.path) {
-                    if self.coredataFileManager.encryptAESFileAt(storeDecPath.path, newPath: storeEncPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
-                        _ = storeDecPath.path.asFilePath(self.coredataFileManager).remove()
-                        _ = subFileSHM.path.asFilePath(self.coredataFileManager).remove()
-                        _ = subFileWAL.path.asFilePath(self.coredataFileManager).remove()
+                guard let _self = self else {return}
+                if _self.coredataFileManager.fileExists(atPath: storeDecPath.path) {
+                    if _self.coredataFileManager.encryptAESFileAt(storeDecPath.path, newPath: storeEncPath.path, key: configuration.protectionAESKey.key, iv: configuration.protectionAESKey.iv) {
+                        _ = storeDecPath.path.asFilePath(_self.coredataFileManager).remove()
+                        _ = subFileSHM.path.asFilePath(_self.coredataFileManager).remove()
+                        _ = subFileWAL.path.asFilePath(_self.coredataFileManager).remove()
                     }
                     else {
                         print("Could not Encrypt store, might be leak the sensitive information")
@@ -677,10 +677,10 @@ fileprivate class MyCoreDataStack {
         })
         
         unloadStoreBlock = { [weak self] in
-            guard let `self` = self else {return}
-            let stores = self.persistentContainer.persistentStoreCoordinator.persistentStores
+            guard let _self = self else {return}
+            let stores = _self.persistentContainer.persistentStoreCoordinator.persistentStores
             for store in stores {
-                try? self.persistentContainer.persistentStoreCoordinator.remove(store)
+                try? _self.persistentContainer.persistentStoreCoordinator.remove(store)
             }
         }
         
@@ -693,8 +693,8 @@ fileprivate class MyCoreDataStack {
         guard error == nil else {return}
         
         contextsQueue.sync { [weak self] in
-            guard let `self` = self else {return}
-            self.contexts.removeAllObjects()
+            guard let _self = self else {return}
+            _self.contexts.removeAllObjects()
         }
         
         backgroundContext = persistentContainer.newBackgroundContext()
@@ -708,8 +708,8 @@ fileprivate class MyCoreDataStack {
         context.mergePolicy = NSMergePolicy.mergeByPropertyStoreTrump
         if keepContext {
             contextsQueue.sync { [weak self] in
-                guard let `self` = self else {return}
-                self.contexts.add(context)
+                guard let _self = self else {return}
+                _self.contexts.add(context)
             }
         }
     }
@@ -739,8 +739,8 @@ fileprivate class MyCoreDataStack {
     func mergeChanges(_ objectIDs: [NSManagedObjectID]?, context: NSManagedObjectContext?) {
         guard let objIDs = objectIDs, let _ = context else {return}
         contextsQueue.sync { [weak self] in
-            guard let `self` = self else {return}
-            NSManagedObjectContext.mergeChanges(fromRemoteContextSave: [NSUpdatedObjectsKey: objIDs], into: self.contexts.allObjects)
+            guard let _self = self else {return}
+            NSManagedObjectContext.mergeChanges(fromRemoteContextSave: [NSUpdatedObjectsKey: objIDs], into: _self.contexts.allObjects)
         }
     }
     

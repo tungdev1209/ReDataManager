@@ -14,7 +14,7 @@ let kCleanBagDealloc = "CleanBag_Dealloc"
 let kCleanBagObjectId = "CleanBag_ObjectId"
 
 class CleanBag: NSObject {
-    fileprivate let bagId = NSUUID.createBaseTime()
+    fileprivate let bagId = UUID().uuidString
     fileprivate let subcribers = NSHashTable<AnyObject>(options: NSPointerFunctions.Options.weakMemory)
     fileprivate func registerSubcriberObject(_ subcriber: Subcriber) {
         subcribers.add(subcriber)
@@ -36,7 +36,7 @@ class Subcriber: NSObject {
     
     @objc dynamic fileprivate weak var bag: CleanBag?
     
-    fileprivate let subcriberId = NSUUID.createBaseTime()
+    fileprivate let subcriberId = UUID().uuidString
     fileprivate weak var observableObj: ObservableObject?
     
     func cleanupBy(_ b: CleanBag) {
@@ -72,7 +72,7 @@ class ObservableObject: NSObject {
     fileprivate let observationQueue = DispatchQueue(label: "com.observable.observation")
     fileprivate let executionQueue = DispatchQueue(label: "com.observable.execution")
     fileprivate var obsAdded = false
-    fileprivate let objectID = NSUUID.createBaseTime()
+    fileprivate let objectID = UUID().uuidString
     
     @objc dynamic fileprivate var syncupObject: ObservableObject?
     

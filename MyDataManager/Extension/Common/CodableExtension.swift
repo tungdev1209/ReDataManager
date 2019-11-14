@@ -25,6 +25,9 @@ extension KeyedDecodingContainer {
             case is Double:
                 model = try decode(Double.self, forKey: key) as? T
                 
+            case is CGFloat:
+                model = try decode(CGFloat.self, forKey: key) as? T
+                
             default:
                 model = try decode(Float.self, forKey: key) as? T
             }

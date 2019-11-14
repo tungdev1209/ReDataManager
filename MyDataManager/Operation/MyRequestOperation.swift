@@ -102,14 +102,12 @@ enum HeaderKey {
 
 extension Dictionary {
     mutating func merge(dict: [Key: Value]) {
-        for (k, v) in dict {
-            updateValue(v, forKey: k)
-        }
+        dict.forEach({ updateValue($0.value, forKey: $0.key) })
     }
 }
 
 class Header {
-    var headers = [String: String]()
+    var headers: [String: String] = [:]
     func add(_ type: HeaderKey) -> Header {
         headers.merge(dict: type.value)
         return self
@@ -135,7 +133,7 @@ class MyRequestOperation {
     var cachePolicy = URLRequest.CachePolicy.useProtocolCachePolicy
     var timeout = 60.0
     var secondaryTimeout = 30.0
-    var headers = [String: String]()
+    var headers: [String: String] = [:]
     var postBody: Data?
     var retryTimes = 3
     var shouldRequestAsynchronously = true
@@ -145,7 +143,7 @@ class MyRequestOperation {
     private(set) var urlRequest: URLRequest?
     private(set) var errors: [Error]?
     private(set) var response: URLResponse?
-    private(set) var callStack = [String]()
+    private(set) var callStack: [String] = []
     
     private var synchronousRequestSemaphore: DispatchSemaphore?
     private var responseData: Data?
@@ -169,7 +167,7 @@ class MyRequestOperation {
     
     private func appendError(_ error: Error) {
         if errors == nil {
-            errors = [Error]()
+            errors = []
         }
         errors!.append(error)
     }
@@ -220,9 +218,7 @@ class MyRequestOperation {
     }
     
     func headers(_ requestHeaders: [String: String]) -> MyRequestOperation {
-        for field in requestHeaders.keys {
-            headers[field] = requestHeaders[field]
-        }
+        requestHeaders.forEach({ headers[$0.key] = $0.value })
         return self
     }
     
@@ -266,9 +262,7 @@ class MyRequestOperation {
         applyConfig()
         
         // add headers
-        for field in headers.keys {
-            urlRequest?.addValue(headers[field]!, forHTTPHeaderField: field)
-        }
+        headers.forEach({ urlRequest?.addValue($0.value, forHTTPHeaderField: $0.key) })
         
         // add post body
         urlRequest?.httpBody = postBody
@@ -289,7 +283,7 @@ class MyRequestOperation {
             
             // for sync request
             MyRequestManager.shared.removeOperation(self)
-            completion?(self.responseData, self.errors, self)
+            completion?(responseData, errors, self)
         }
     }
     
@@ -391,7 +385,7 @@ class MyAttachment {
     }
     
     private(set) var error = MyError.None
-    private var attachments = [Attachment]()
+    private var attachments: [Attachment] = []
     
     func boundary(_ b: String) -> MyAttachment {
         boundary = b
@@ -442,7 +436,7 @@ class MyAttachment {
 
 fileprivate class MyRequestManager {
     static let shared = MyRequestManager()
-    var operations = [String: MyRequestOperation]()
+    var operations: [String: MyRequestOperation] = [:]
     let operationQueue = DispatchQueue.init(label: "com.myrequestmanager.operation")
     func cacheOperation(_ operation: MyRequestOperation) {
         operationQueue.sync { [weak self] in
@@ -468,7 +462,7 @@ class MyRequestConfiguration {
     var cachePolicy = URLRequest.CachePolicy.useProtocolCachePolicy
     var timeout = 60.0
     var secondaryTimeout = 30.0
-    var headers = [String: String]()
+    var headers: [String: String] = [:]
     var postBody: Data?
     var retryTimes = 3
     var shouldRequestAsynchronously = true
@@ -514,9 +508,7 @@ class MyRequestConfiguration {
     }
     
     func headers(_ requestHeaders: [String: String]) -> MyRequestConfiguration {
-        for field in requestHeaders.keys {
-            headers[field] = requestHeaders[field]
-        }
+        requestHeaders.forEach({ headers[$0.key] = $0.value })
         return self
     }
     

@@ -29,7 +29,7 @@ class MyPlayerController: NSObject {
     @objc dynamic fileprivate(set) weak var cleanPlayerBag: CleanPlayerBag?
     
     private(set) var url: URL!
-    fileprivate let _id = NSUUID.createBaseTime()
+    fileprivate let _id = UUID().uuidString
     
     var configuration: MyPlayerConfiguration?
     
